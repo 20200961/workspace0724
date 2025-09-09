@@ -1,0 +1,362 @@
+package com.myapp.controller;
+
+import com.myapp.model.vo.Asset;
+import com.myapp.model.vo.Portfolio;
+import com.myapp.model.vo.TradeHistory;
+import com.myapp.model.vo.User;
+import com.myapp.service.AssetService;
+import com.myapp.service.PortfolioService;
+import com.myapp.service.TradeHistoryService;
+import com.myapp.service.UserService;
+
+import org.jfree.chart.ChartPanel;
+import org.jfree.chart.JFreeChart;
+import org.jfree.chart.axis.DateAxis;
+import org.jfree.chart.axis.NumberAxis;
+import org.jfree.chart.plot.CombinedDomainXYPlot;
+import org.jfree.chart.plot.XYPlot;
+import org.jfree.chart.renderer.xy.CandlestickRenderer;
+import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
+import org.jfree.data.xy.DefaultHighLowDataset;
+import org.jfree.data.xy.XYSeries;
+import org.jfree.data.xy.XYSeriesCollection;
+
+import javax.swing.*;
+import javax.swing.Timer;
+import java.awt.*;
+import java.util.*;
+import java.util.List;
+
+public class AssetController {
+    private AssetService assetService = new AssetService();
+    private UserService userService = new UserService();
+    private TradeHistoryService tradeHistoryService = new TradeHistoryService();
+    private Random random = new Random();
+
+
+    public void viewAllAssets() {
+        List<Asset> list = assetService.selectAllAsset();
+        list.forEach(System.out::println);
+    }
+
+    public void viewAsset(String assetId) {
+        Asset a = assetService.selectAsset(assetId);
+        System.out.println(a != null ? a : "해당 자산 없음");
+    }
+
+
+    public void buyAsset(User user, String assetId, double amount) {
+        Asset asset = assetService.selectAsset(assetId);
+        if (asset == null) {
+            System.out.println("해당 자산 없음");
+            return;
+        }
+
+        double total = asset.getCurrentPrice() * amount;
+        double balance = userService.getBalance(user);
+
+        if (balance < total) {
+            System.out.println("잔액 부족. 현재 잔액: " + balance);
+            return;
+        }
+
+        user.setBalance(balance - total);
+        userService.updateBalance(user);
+
+        PortfolioService portfolioService = new PortfolioService();
+        Portfolio existing = portfolioService.getPortfolioByAsset(user.getUserId(), assetId);
+
+        if (existing == null) {
+            Portfolio newP = new Portfolio(user.getUserId(), assetId, amount, asset.getCurrentPrice());
+            portfolioService.insertPortfolio(newP);
+        } else {
+            double newQty = existing.getQuantity() + amount;
+            double newAvg = (existing.getQuantity() * existing.getAvgPrice() + amount * asset.getCurrentPrice()) / newQty;
+            existing.setQuantity(newQty);
+            existing.setAvgPrice(newAvg);
+            portfolioService.updatePortfolio(existing);
+        }
+
+        System.out.println(amount + "개 매수 완료. 잔액: " + user.getBalance());
+        
+        TradeHistory th = new TradeHistory(
+                user.getUserId(),
+                assetId,
+                true,  // true = 매수
+                asset.getCurrentPrice(),
+                total,
+                amount,
+                new java.sql.Timestamp(System.currentTimeMillis())
+            );
+        tradeHistoryService.updateTradeHistory(th);
+        
+    }
+
+    public void sellAsset(User user, String assetId, double amount) {
+        Asset asset = assetService.selectAsset(assetId);
+        if (asset == null) {
+            System.out.println("해당 자산 없음");
+            return;
+        }
+
+        PortfolioService portfolioService = new PortfolioService();
+        Portfolio existing = portfolioService.getPortfolioByAsset(user.getUserId(), assetId);
+
+        if (existing == null || existing.getQuantity() < amount) {
+            System.out.println("보유 수량 부족. 매도 실패");
+            return;
+        }
+
+        double total = asset.getCurrentPrice() * amount;
+
+        double remainQty = existing.getQuantity() - amount;
+        if (remainQty == 0) {
+            portfolioService.deletePortfolio(existing);
+        } else {
+            existing.setQuantity(remainQty);
+            portfolioService.updatePortfolio(existing);
+        }
+
+        user.setBalance(user.getBalance() + total);
+        userService.updateBalance(user);
+
+        System.out.println(amount + "개 매도 완료. 잔액: " + user.getBalance());
+        
+        TradeHistory th = new TradeHistory(
+        	    user.getUserId(),
+        	    assetId,
+        	    false,  // false = 매도
+        	    asset.getCurrentPrice(),
+        	    total,
+        	    amount,
+        	    new java.sql.Timestamp(System.currentTimeMillis())
+        );
+        tradeHistoryService.updateTradeHistory(th);
+    }
+
+    public void showRealtimeCandleChart(String assetId) {
+        Asset asset = assetService.selectAsset(assetId);
+        if (asset == null) { System.out.println("해당 자산 없음"); return; }
+
+        List<Date> dates = new ArrayList<>();
+        List<Double> highs = new ArrayList<>();
+        List<Double> lows = new ArrayList<>();
+        List<Double> opens = new ArrayList<>();
+        List<Double> closes = new ArrayList<>();
+        List<Double> volumes = new ArrayList<>();
+
+        addNewCandle(asset, dates, highs, lows, opens, closes, volumes);
+        DefaultHighLowDataset candleDataset = createDataset(asset.getAssetName(), dates, highs, lows, opens, closes, volumes);
+
+        // 캔들차트
+        NumberAxis priceAxis = new NumberAxis("Price");
+        priceAxis.setAutoRangeIncludesZero(false);
+        priceAxis.setTickLabelPaint(Color.WHITE);
+        DateAxis dateAxis = new DateAxis();
+        dateAxis.setTickLabelPaint(Color.WHITE);
+
+        CandlestickRenderer candleRenderer = new CandlestickRenderer();
+        candleRenderer.setUpPaint(Color.GREEN);
+        candleRenderer.setDownPaint(Color.RED);
+
+        XYPlot candlePlot = new XYPlot(candleDataset, dateAxis, priceAxis, candleRenderer);
+        candlePlot.setBackgroundPaint(Color.BLACK);
+        candlePlot.setDomainGridlinePaint(Color.DARK_GRAY);
+        candlePlot.setRangeGridlinePaint(Color.DARK_GRAY);
+
+	     // 이동평균선(MA5)
+	     XYSeries maSeries = new XYSeries("MA5");
+	     final double[][] ma5Ref = { calculateMA(closes, 5) }; 
+	     for (int i = 0; i < dates.size(); i++) {
+	         if (!Double.isNaN(ma5Ref[0][i])) maSeries.add(dates.get(i).getTime(), ma5Ref[0][i]);
+	     }
+	     XYSeriesCollection maCollection = new XYSeriesCollection(maSeries);
+	     XYLineAndShapeRenderer maRenderer = new XYLineAndShapeRenderer(true, false);
+	     maRenderer.setSeriesPaint(0, Color.YELLOW);
+	     candlePlot.setDataset(1, maCollection);
+	     candlePlot.setRenderer(1, maRenderer);
+	
+	     // RSI 서브 차트
+	     NumberAxis rsiAxis = new NumberAxis("RSI");
+	     XYSeries rsiSeries = new XYSeries("RSI14");
+	     final double[][] rsiRef = { calculateRSI(closes, 14) }; 
+	     for (int i = 0; i < dates.size(); i++) {
+	         if (!Double.isNaN(rsiRef[0][i])) rsiSeries.add(dates.get(i).getTime(), rsiRef[0][i]);
+	     }
+	     XYSeriesCollection rsiCollection = new XYSeriesCollection(rsiSeries);
+	     XYLineAndShapeRenderer rsiRenderer = new XYLineAndShapeRenderer(true, false);
+	     rsiRenderer.setSeriesPaint(0, Color.CYAN);
+	     XYPlot rsiPlot = new XYPlot(rsiCollection, dateAxis, rsiAxis, rsiRenderer);
+
+        // Combined Plot
+        CombinedDomainXYPlot combinedPlot = new CombinedDomainXYPlot(dateAxis);
+        combinedPlot.add(candlePlot, 3); 
+        combinedPlot.add(rsiPlot, 1);    
+
+        JFreeChart chart = new JFreeChart(
+                asset.getAssetName() + " 실시간 차트 (MA5 + RSI)",
+                new Font("맑은 고딕", Font.BOLD, 16),
+                combinedPlot,
+                true
+        );
+        chart.setBackgroundPaint(Color.BLACK);
+
+        ChartPanel chartPanel = new ChartPanel(chart);
+        chartPanel.setPreferredSize(new Dimension(1000, 600));
+
+        JFrame frame = new JFrame(asset.getAssetName() + " 실시간 차트");
+        frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        frame.add(chartPanel);
+        frame.pack();
+        frame.setVisible(true);
+
+        // 실시간 갱신
+        final double[] tempOpen = {asset.getCurrentPrice()};
+        final double[] tempHigh = {tempOpen[0]};
+        final double[] tempLow = {tempOpen[0]};
+        final double[] tempClose = {tempOpen[0]};
+        final int[] counter = {0};
+
+        new Timer(1000, e -> {
+            Asset latestAsset = assetService.selectAsset(assetId);
+            double newPrice = latestAsset.getCurrentPrice();
+
+            tempHigh[0] = Math.max(tempHigh[0], newPrice);
+            tempLow[0] = Math.min(tempLow[0], newPrice);
+            tempClose[0] = newPrice;
+            counter[0]++;
+
+            if (counter[0] >= 5) {
+                Date newDate = new Date();
+                dates.add(newDate);
+                opens.add(tempOpen[0]);
+                highs.add(tempHigh[0]);
+                lows.add(tempLow[0]);
+                closes.add(tempClose[0]);
+                volumes.add(1 + random.nextDouble() * 9);
+
+                if (dates.size() > 60) {
+                    dates.remove(0); opens.remove(0); highs.remove(0); lows.remove(0); closes.remove(0); volumes.remove(0);
+                }
+
+                tempOpen[0] = tempClose[0];
+                tempHigh[0] = tempOpen[0];
+                tempLow[0] = tempOpen[0];
+                tempClose[0] = tempOpen[0];
+                counter[0] = 0;
+
+                DefaultHighLowDataset newCandle = createDataset(asset.getAssetName(), dates, highs, lows, opens, closes, volumes);
+                candlePlot.setDataset(0, newCandle);
+
+                ma5Ref[0] = calculateMA(closes, 5);
+                maSeries.clear();
+                for (int i = 0; i < dates.size(); i++)
+                    if (!Double.isNaN(ma5Ref[0][i]))
+                        maSeries.add(dates.get(i).getTime(), ma5Ref[0][i]);
+
+                rsiRef[0] = calculateRSI(closes, 14);
+                rsiSeries.clear();
+                for (int i = 0; i < dates.size(); i++)
+                    if (!Double.isNaN(rsiRef[0][i]))
+                        rsiSeries.add(dates.get(i).getTime(), rsiRef[0][i]);
+            }
+        }).start();
+    }
+
+    
+    private void addNewCandle(Asset asset, List<Date> dates, List<Double> highs, List<Double> lows,
+                              List<Double> opens, List<Double> closes, List<Double> volumes) {
+        Date newDate = new Date();
+        double price = asset.getCurrentPrice();
+        double high = price * (1 + random.nextDouble() * 0.01);
+        double low = price * (1 - random.nextDouble() * 0.01);
+        double open = price * (0.995 + random.nextDouble() * 0.01);
+        double close = price;
+        double volume = 1 + random.nextDouble() * 9;
+
+        dates.add(newDate); highs.add(high); lows.add(low); opens.add(open); closes.add(close); volumes.add(volume);
+    }
+
+    private DefaultHighLowDataset createDataset(String name, List<Date> dates, List<Double> highs, List<Double> lows,
+                                                List<Double> opens, List<Double> closes, List<Double> volumes) {
+        Date[] dateArr = dates.toArray(new Date[0]);
+        double[] highArr = highs.stream().mapToDouble(d -> d).toArray();
+        double[] lowArr = lows.stream().mapToDouble(d -> d).toArray();
+        double[] openArr = opens.stream().mapToDouble(d -> d).toArray();
+        double[] closeArr = closes.stream().mapToDouble(d -> d).toArray();
+        double[] volumeArr = volumes.stream().mapToDouble(d -> d).toArray();
+
+        return new DefaultHighLowDataset(name, dateArr, highArr, lowArr, openArr, closeArr, volumeArr);
+    }
+
+    private double[] calculateMA(List<Double> closes, int period) {
+        double[] ma = new double[closes.size()];
+        for (int i = 0; i < closes.size(); i++) {
+            if (i < period - 1) ma[i] = Double.NaN;
+            else {
+                double sum = 0;
+                for (int j = i - period + 1; j <= i; j++) sum += closes.get(j);
+                ma[i] = sum / period;
+            }
+        }
+        return ma;
+    }
+
+    private double[] calculateRSI(List<Double> closes, int period) {
+        double[] rsi = new double[closes.size()];
+        for (int i = 0; i < closes.size(); i++) {
+            if (i < period) { rsi[i] = Double.NaN; continue; }
+            double gain = 0, loss = 0;
+            for (int j = i - period + 1; j <= i; j++) {
+                double diff = closes.get(j) - closes.get(j - 1);
+                if (diff > 0) gain += diff;
+                else loss -= diff;
+            }
+            double rs = loss == 0 ? 100 : gain / loss;
+            rsi[i] = 100 - (100 / (1 + rs));
+        }
+        return rsi;
+    }
+    
+	 // 로그인한 회원의 포트폴리오 조회
+    public void viewUserPortfolio(User user) {
+        ArrayList<Portfolio> portfolios = new PortfolioService().getPortfolio(user.getUserId());
+
+        if (portfolios.isEmpty()) {
+            System.out.println("보유한 코인이 없습니다.");
+            return;
+        }
+
+        System.out.println("=== 보유 코인 현황 ===");
+        System.out.printf("%-8s %-9s %10s %14s %11s %2s%n",
+                "코인 ID", "코인명", "보유수량", "평균 매수가", "현재 가격", "수익률(%)");
+
+        for (Portfolio p : portfolios) {
+            Asset asset = assetService.selectAsset(p.getAssetId());
+            if (asset == null) continue;
+
+            double quantity = p.getQuantity();
+            double avgPrice = p.getAvgPrice();
+            double currentPrice = asset.getCurrentPrice();
+            double profitRate = ((currentPrice - avgPrice) / avgPrice) * 100;
+
+            String reset = "\u001B[0m";
+            String green = "\u001B[32m";
+            String red = "\u001B[31m";
+            String color = profitRate >= 0 ? green : red;
+
+            String profitStr = String.format("%7.2f", profitRate);
+            System.out.printf("%-8s %-12s %12.4f %15.2f %15.2f %s%s%s%n",
+                    asset.getAssetId(),
+                    asset.getAssetName(),
+                    quantity,
+                    avgPrice,
+                    currentPrice,
+                    color,
+                    profitStr,
+                    reset);
+        }
+    }
+    
+
+}

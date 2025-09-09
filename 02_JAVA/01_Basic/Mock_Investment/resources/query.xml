@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
+<properties>
+<entry key="insertUser"> INSERT INTO USERS VALUES(?, ?, ?, ?, SYSDATE ) </entry>
+<entry key="loginUser"> SELECT * FROM USERS WHERE USER_ID = ? AND PASSWORD = ? </entry>
+<entry key="getBalance"> SELECT balance FROM USERS WHERE user_id=? </entry>
+<entry key="updateBalance"> UPDATE USERS SET balance = ? WHERE user_id=? </entry>
+<entry key="selectAsset"> SELECT * FROM ASSET WHERE asset_id = ? </entry>
+<entry key="selectAllAsset"> SELECT * FROM ASSET </entry>
+<entry key="updatePrice">UPDATE ASSET SET current_price = ? WHERE asset_id = ?</entry>
+<entry key="insertTrade">INSERT INTO TRADE_HISTORY VALUES( SEQ_USERNO.NEXTVAL, ?, ?, ?, ?, SYSDATE )</entry>
+<entry key="updateBalance"> UPDATE USERS SET balance = ? WHERE user_id=? </entry>
+<entry key="addBalance"> UPDATE USERS SET balance = balance + ? WHERE user_id = ? </entry>
+<entry key="selectPortfolio">SELECT user_id, asset_id, quantity, avg_price FROM PORTFOLIO WHERE user_id = ? </entry>
+<entry key="insertPortfolio"> INSERT INTO PORTFOLIO(user_id, asset_id, quantity, avg_price) VALUES (?, ?, ?, ?) </entry>
+<entry key="updatePortfolio"> UPDATE PORTFOLIO SET quantity = ?, avg_price = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ? AND asset_id = ? </entry>
+<entry key="deletePortfolio"> DELETE FROM PORTFOLIO WHERE user_id = ? AND asset_id = ? </entry>
+<entry key="selectTradeHistory"> SELECT * FROM TRADE_HISTORY WHERE user_id = ? </entry>
+<entry key="selectAllTradeHistory"> SELECT * FROM TRADE_HISTORY WHERE user_id = ? </entry>
+<entry key="selectTradeHistory"> SELECT * FROM TRADE_HISTORY WHERE user_id = ? AND trade_time = ?</entry>
+<entry key="updateTradeHistory"> INSERT INTO TRADE_HISTORY (user_id, asset_id, trade_type, price, all_price, quantity, trade_time) VALUES (?, ?, ?, ?, ?, ?, ?) </entry>
+</properties>
