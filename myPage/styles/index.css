@@ -1,0 +1,179 @@
+*{
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
+
+    font-family: "Noto Sans", serif;
+    font-optical-sizing: auto;
+    font-style: normal;
+    font-variation-settings:"wdth" 100;
+}
+#header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+}
+#header .icons img {
+  margin-left: 10px;
+}
+#wrapper{
+    width: 100%;
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 10px 0;
+    text-align: center;
+}
+.main {
+    display: flex;
+    margin-top: 20px;
+    gap: 20px;
+}
+#mainheader {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+#movie {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+#movie label {
+    text-align: center;
+}
+
+#movie img {
+    width: 150px;
+    border-radius: 8px;
+}
+.searchmenu {
+    text-align: center;
+}
+.searchmenu input {
+    padding: 8px 12px;
+    width: 1000px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+.searchmenu button {
+    padding: 8px 16px;
+    margin-left: 5px;
+    background-color: #d32f2f;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+.photoplay {
+    text-align: center;
+}
+.card {
+    width: 500px;
+    background-color: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    overflow: hidden;
+    font-family: 'Noto Sans', sans-serif;
+    margin: 20px auto;
+}
+.poster{
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+#footer{
+    width: 100%;
+    padding: 16px;
+    
+}
+
+#footer > div{
+    width: 100%;
+}
+
+#footer-1{
+    height: 55px;
+    width: 100%;
+}
+
+#footer-1 ul{
+    height: 100%;
+    width: 100%;
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+}
+
+#footer-1 ul a{
+    font-size: 16px;
+    font-weight: 700;
+}
+
+#footer-1 ul span:after{
+    content: "|";
+    color: black;
+    margin: 0 10px;
+}
+
+#footer-2{
+    height: calc(100% - 55px);
+}
+
+#footer-2 p{
+    width: 100%;
+    font-size: 12px;
+    font-weight: 500;
+}
+#movie2 {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+}
+#text{
+    width: 49%;
+    margin: 0 auto; 
+    background-color: #111;
+    color: #fff;
+    text-align: center;
+}
+
+.tags {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+}
+
+.tag {
+  display: inline-block;
+  padding: 6px 12px;
+  border: 1px solid #fff;
+  border-radius: 6px;  
+  background-color: #111; 
+  color: #fff;   
+  font-weight: bold;
+  font-size: 14px;
+  cursor: default;  
+}
+
+#info{
+    text-align: center;
+}
+#text2{
+    width: 49%;
+    margin: 0 auto; 
+    background-color: #111;
+    color: #fff;
+    text-align: center;
+}
