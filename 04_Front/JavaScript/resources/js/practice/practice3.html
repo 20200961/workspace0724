@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <form action="answer">
+        <input type="number" id="num1" name="num1" min="0" max="100">
+        <select id='operator' name="operator">
+            <option value="plus" selected>+</option>
+            <option value="minus">-</option>
+            <option value="multi">*</option>
+            <option value="divide">/</option>
+        </select>
+        <input type="number" id="num2" name="num2" min="0" max="100">
+        <input type="button" onclick="cal()" value="=">
+        <input type="number" id="result" name="result" max="10000">
+    </form>
+    
+    <script>
+        function cal(){
+            const a = Number(num1.value); 
+            const b = Number(num2.value); 
+            const op = operator.value;
+            const result = document.getElementById('result');
+
+            if(operator.value== "plus"){
+                result.value = a+b
+            }
+            if(operator.value== "minus"){
+                result.value = a-b
+            }
+            if(operator.value== "multi"){
+                result.value = a*b
+            }
+            if(operator.value== "divide"){
+                result.value = a/b
+            }
+
+        }
+    </script>
+</body>
+</html>

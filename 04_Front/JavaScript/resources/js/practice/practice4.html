@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <fieldset>
+        <legend>회원가입</legend>
+        아이디 : <input type="text" id="id" oninput="checkId()"><span id="idMsg"></span><br><br>
+        비밀번호 : <input type="password" id="pw"><br><br>
+        비밀번호 확인 : <input type="password" id="rpw" oninput="checkPwd()"><span id="pwMsg"></span><br><br>
+        이름 : <input type="text" id="name"><br><br>
+        <input type="button" value="회원가입" onclick="signup()">
+    </fieldset>
+
+    <script> 
+        const id = document.getElementById('id');
+        const pw = document.getElementById('pw');
+        const rpw = document.getElementById('rpw');
+        const name = document.getElementById('name');
+        const idMsg = document.getElementById('idMsg');
+        const pwMsg = document.getElementById('pwMsg');
+
+        function checkId(){
+            if(id.value == "user02"){
+                idMsg.textContent = "사용가능한 아이디입니다";
+                idMsg.style.color = "green";
+            }else {
+                idMsg.textContent = "이미 존재하는 아이디입니다.";
+                idMsg.style.color = "red";
+            }
+        }
+
+        function checkPwd(){
+            if(pw.value != rpw.value){
+                pwMsg.textContent="비밀번호가 일치하지 않습니다.";
+                pwMsg.style.color="red";
+            }else {
+                pwMsg.textContent="비밀번호가 일치합니다.";
+                pwMsg.style.color="green";
+            }
+        }
+        function signup(){
+            if(id.value != "user02"){
+                alert("아이디를 체크하세요");
+                location.reload();
+                return;
+            }
+            if(pw.value != rpw.value){
+                alert("비밀번호를 체크하세요");
+                location.reload();
+                return;
+            }
+            if(id.value == "" || pw.value == "" || rpw.value == "" || name.value == ""){
+                alert("모든 항목을 입력해주세요");
+                location.reload();
+                return;
+            }
+            alert(name.value+"님, 회원가입이 성공적으로 완료되었습니다^^");
+            location.reload();
+        }
+    </script>
+</body>
+</html>
