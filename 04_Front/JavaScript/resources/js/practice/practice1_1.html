@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"
+    integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo="
+    crossorigin="anonymous"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.14.1/jquery-ui.min.js" 
+        integrity="sha256-AlTido85uXPlSyyaZNsjJXeCs07eSv3r43kyCVc8ChI="
+        crossorigin="anonymous"></script>
+
+    <style>
+        div{
+            border: 1px solid black;
+            background: black;
+            height: 100px;
+            width: 100px;
+        }
+    </style>
+</head>
+<body>
+    <h3>문제1. 색상 선택후 변경 버튼을 클릭하면 색상이 변경되도록 만들어라</h3>
+    <div id="color-box"></div>
+    <input type="color">
+    <button onclick="changeColor();">변경</button>
+    <script>
+        function changeColor(){
+            $('#color-box').css("background",$("input[type=color]").val());
+        }
+    </script>
+
+    <h3>문제2. 버튼에 따른 크기조절이 가능하게 만들어 보세요.</h3>
+    <div id="size-box"></div>
+    <input type="button" value="50x50" onclick="changeSize(50, 50);">
+    <input type="button" value="100x100" onclick="changeSize(100, 100);">
+    <input type="button" value="200x200" onclick="changeSize(200, 200);">
+
+    <script>
+        function changeSize(width, height){
+            $("#size-box").css({
+                "width" : width + "px",
+                "height" : height + "px"
+            });
+        }
+    </script>
+</body>
+</html>

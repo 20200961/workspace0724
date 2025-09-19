@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        .area{
+            border: 1px solid red;
+            min-height: 200px;
+        }
+    </style>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+</head>
+<body>
+  <form action="">
+    <fieldset>
+        <legend>취미</legend>
+        <table>
+            <tr>
+                <td>
+                    <label>
+                        <input type="checkbox" id="all-hobby-check" onchange="allCheck(this)">
+                        전체선택
+                    </label>
+                </td>
+                <td><label><input type="checkbox" name="hobby" value="종합">종합</label></td>
+                <td><label><input type="checkbox" name="hobby" value="소설">소설</label></td>
+                <td><label><input type="checkbox" name="hobby" value="시/에세이">시/에세이</label></td>
+                <td><label><input type="checkbox" name="hobby" value="경영/경제">경영/경제</label></td>
+                <td><label><input type="checkbox" name="hobby" value="자기계발">자기계발</label></td>
+                <td><label><input type="checkbox" name="hobby" value="아동">아동</label></td>
+            </tr>
+            <tr>
+                <td></td>
+                <td><label><input type="checkbox" name="hobby" value="여행">여행</label></td>
+                <td><label><input type="checkbox" name="hobby" value="과학">과학</label></td>
+                <td><label><input type="checkbox" name="hobby" value="역사/문화">역사/문화</label></td>
+                <td><label><input type="checkbox" name="hobby" value="외국어">외국어</label></td>
+                <td><label><input type="checkbox" name="hobby" value="컴퓨터">컴퓨터</label></td>
+                <td><label><input type="checkbox" name="hobby" value="만화">만화</label></td>
+            </tr>
+        </table>
+    </fieldset>
+  </form>  
+
+  <br>
+
+  <button type="button" onclick="selectCatrgory()">카테고리 선택</button>
+  <div class="area" id="select-result"></div>
+
+  <script>
+    function selectCatrgory(){
+        let str = ""; 
+        const $checkBoxList = $("input[name=hobby]");   
+        $checkBoxList.each(function(idx, el){
+            if(el.checked){
+                str += el.value + " ";
+            }
+        });
+        $('#select-result').text(str ? str : '선택된 항목이 없습니다.');
+    }
+    
+    function allCheck(_allCheckBox){
+        const isChecked = _allCheckBox.checked;
+        const $checkBoxList = $("input[name=hobby]");
+        $checkBoxList.each(function(idx, el){
+            $(el).prop("checked", isChecked); 
+        });
+    }
+
+    function changeAllCheckBox(){
+        const $checkBoxList = $("input[name=hobby]");
+        let isChecked = true;
+        $checkBoxList.each(function(idx,el){
+            if(!el.checked){
+                isChecked = false;
+                return false;
+            } 
+        });
+        $("#all-hobby-check").prop('checked',isChecked);
+    }
+
+    $('input[name=hobby]').click(changeAllCheckBox);
+  </script>
+</body>
+</html>
