@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <!-- 외부라이브러리 -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"
+        integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo="
+        crossorigin="anonymous"></script>
+    <style>
+        .qa-box > div{
+            width: 300px;
+            height: 30px;
+            background: rgb(167, 167, 255);
+            text-align: center;
+            line-height:30px;
+            border:1px solid rgb(100,100,250);
+            cursor:pointer;
+            border-radius: 12px;
+            margin-top: 12px;
+        }
+        .qa-box > p{
+            border:1px solid rgb(100,100,250);
+            width: 300px;
+            height: 100px;
+            border-radius: 12px;
+            
+        }
+    </style>
+
+</head>
+<body>
+    <h1>jQuery</h1>
+    <h3>jquery이벤트</h3>
+
+    <input type="submit" value="완료">
+
+    <script>
+        // 1. $("선택자").이벤트(이벤트핸들러);
+        $(":submit").mouseenter(function(){
+            $(this).val("제출하기");
+        })
+
+        $(":submit").mouseleave(function(){
+            $(this).val("완료");
+        })
+    </script>
+
+    <hr>
+    <div class="area" id="wrap">
+        <h6>클릭시 h6요소 추가</h6>
+    </div>
+
+    <script>
+        function addEvent(){
+            const h6List = document.querySelectorAll("#wrap>h6");
+            for(let h3El of h6List){
+                h3El.onclick = function(){
+                    let h6El = document.createElement('h6');
+                    h6El.innerHTML = '클릭시 h6요소 추가'
+                }
+            }
+        }
+        document.querySelector("#wrap>h6").onclick=function(){
+            // js로 요소를 직접 생성. document.createElement('생성할 요소');
+            let h6El = document.createElement('h6'); //<h6></h6>
+            h6El.innerHTML = '클릭시 h6요소 추가';// <h6>클릭시 h6요소 추가</h6>
+
+            // 특정요소.appendChild(요소) -> 특정요소에 맨 마지막 자식요소로 새로운 요소를 추가함
+            document.querySelector("#wrap").appendChild(h6El);
+            //document.querySelector("#wrap").innerHTML += "<h6>클릭시 h6요소 추가!</h6>";
+            // document.querySelector("#wrap").innerHTML를 문자열로 가지고 온 다음 "<h6>클릭시 h6요소 추가!</h6>" 문자열과
+            // 더한 다음 다시 document.querySelector("#wrap").innerHTML에 넣어줌
+        };
+
+        // $("#wrap>h6").click(function(){
+        //     $("#wrap").append("<h6>클릭시 h6요소 추가!</h6>");
+        // })
+    </script>
+</body>
+</html>
