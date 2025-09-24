@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>account</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@100..900&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>가계부</h1>
+            <div class="head">현재 잔액</div>
+            <div class="show">
+                <span id="money"></span>
+            </div>
+        </header>
+        
+        <div class="list-input">
+            <input type="text" id="product" placeholder="내용을 입력하세요(예: 점심값, 월급)">
+            <input type="number" id="price" placeholder="금액을 입력하세요">
+        </div>
+        <div class="input-buttons">
+            <button class="btn-income">수입</button>
+            <button class="btn-expense">지출</button><br>
+        </div>
+        <button id="list-add-btn" class="btn-add">추가하기</button>
+
+        <div class="list-buttons">
+            <button data-filter="all" class="active">전체</button>
+            <button data-filter="income">수입</button>
+            <button data-filter="expense">지출</button>
+            
+        </div>
+        <div class="summary">
+            <div>
+                <p>총 수입</p>
+                <span id="add-text" class="income"></span>
+            </div>
+            <div>
+                <p>총 지출</p>
+                <span id="lost-text" class="expense"></span>
+            </div>
+            <div>
+                <p>잔액</p>
+                <span id="money-text" class="balance"></span>
+            </div>
+        </div>
+
+        <ul id="account-list" class="account-list"></ul>
+    </div>
+
+    <script src="./script.js"></script>
+</body>
+</html>

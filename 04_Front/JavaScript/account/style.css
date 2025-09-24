@@ -1,0 +1,236 @@
+*{
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body{
+    min-height: 100vh;
+    font-family: "Noto Sans KR", sans-serif;
+    font-optical-sizing: auto;
+    font-style: normal;
+    font-weight: 400;
+    background: linear-gradient(135deg, #764ba2, #667eea);
+    padding: 20px;
+}
+
+button{
+    border: none;
+    outline: none;
+}
+
+.container{
+    max-width: 600px;
+    margin: 0 auto;
+    background: #FFF2EF;
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 20px 40px rgba(255, 245, 245, 0.336);
+}
+
+header {
+    background: linear-gradient(90deg, #667eea, #764ba2);
+    color: white;
+    text-align: center;
+    padding: 30px 0;
+}
+
+header h1{
+    font-size: 40px;
+    font-weight: 300;
+    letter-spacing: 2px;
+}
+
+.list-input{
+    display: flex;
+    padding: 20px;
+    border-bottom: 1px solid rgb(224, 224, 224);
+}
+
+.list-input input{
+    flex: 1;
+    padding: 15px;
+    border: 2px solid rgb(224, 224, 224);
+    border-radius: 8px;
+    font-size: 16px;
+    outline: none;
+    transition: border-color 0.3s ease;
+}
+
+.list-input input:focus{
+    border-color: #5D688A;
+}
+
+.input-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.input-buttons button {
+    padding: 8px 20px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: all 0.3s ease;
+}
+
+.btn-income {
+    background: white; 
+    color: #4CAF50; 
+    border: 2px solid #4CAF50;
+}
+
+.btn-expense {
+    background: white;
+    color: #e46464;
+    border: 2px solid #e46464;
+}
+
+.btn-expense:hover {
+    background: #ffeaea;
+}
+
+.btn-add {
+    width: 90%;
+    padding: 14px;
+    margin: 15px auto 0;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 700;
+    background: linear-gradient(90deg, #667eea, #764ba2);
+    color: white;
+    cursor: pointer;
+    transition: opacity 0.3s ease;
+    display: block;
+}
+
+.btn-add:hover {
+    opacity: 0.9;
+}
+
+.delete-btn{
+    background: #e46464;
+    color: white;
+    border-radius: 6px;
+    padding: 8px 12px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: background 0.3s ease;
+}
+
+.delete-btn:hover{
+    background: #d44d4d;
+}
+
+.empty-state{
+    text-align: center;
+    padding: 40px 20px;
+    color: #667eea;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.list-buttons{
+    display: flex;
+    justify-content: center;
+    padding: 20px;
+    border-bottom: 1px solid rgb(224, 224, 224);
+    gap: 10px;
+}
+
+.list-buttons button{
+    padding: 8px 16px;
+    border: 2px solid rgb(224, 224, 224);
+    background: white;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.3s ease;
+}
+
+.list-buttons button:hover,
+.list-buttons button.active{
+    background: #667eea;
+    color: white;
+    border-color: #667eea;
+}
+
+.summary {
+    display: flex;
+    justify-content: space-around; 
+    text-align: center;
+    background: #fff;
+    padding: 20px 0;
+    border-radius: 10px;
+}
+
+.summary p {
+    margin: 0;
+    font-weight: 600;
+    color: #555;
+}
+
+.summary span {
+    font-size: 18px;
+    font-weight: bold;
+    display: block;
+    margin-top: 5px;
+}
+
+.income {
+    color: green;
+}
+
+.expense {
+    color: red;
+}
+
+.balance {
+    color: green;
+}
+.input-buttons .active {
+    background-color: #4caf50;
+    color: #fff;
+}
+.income-amount {
+    color: green;
+    font-weight: bold;
+}
+
+.expense-amount {
+    color: red;
+    font-weight: bold;
+}
+
+.account-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    border-bottom: 1px solid #ddd;
+}
+
+.account-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.btn-income.active {
+    background-color: #4CAF50;
+    color: white;
+}
+
+.btn-expense.active {
+    background-color: #f44336;
+    color: white;
+}
+
+.show {
+    font-size: 23px;
+    color: rgb(103, 209, 103);
+    font-weight: bold;
+}
