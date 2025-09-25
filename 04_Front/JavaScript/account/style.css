@@ -22,7 +22,7 @@ button{
 .container{
     max-width: 600px;
     margin: 0 auto;
-    background: #FFF2EF;
+    background: white;
     border-radius: 15px;
     overflow: hidden;
     box-shadow: 0 20px 40px rgba(255, 245, 245, 0.336);
@@ -76,22 +76,24 @@ header h1{
     cursor: pointer;
     border: 2px solid transparent;
     transition: all 0.3s ease;
+    background: white;
 }
 
 .btn-income {
     background: white; 
     color: #4CAF50; 
-    border: 2px solid #4CAF50;
+    border: 1px solid #4CAF50 !important;
+    
 }
 
 .btn-expense {
     background: white;
     color: #e46464;
-    border: 2px solid #e46464;
+    border: 1px solid #e46464 !important;
 }
 
 .btn-expense:hover {
-    background: #ffeaea;
+    background: white;
 }
 
 .btn-add {
@@ -163,7 +165,7 @@ header h1{
     display: flex;
     justify-content: space-around; 
     text-align: center;
-    background: #fff;
+    background: rgb(236, 236, 236);
     padding: 20px 0;
     border-radius: 10px;
 }
@@ -192,10 +194,6 @@ header h1{
 .balance {
     color: green;
 }
-.input-buttons .active {
-    background-color: #4caf50;
-    color: #fff;
-}
 .income-amount {
     color: green;
     font-weight: bold;
@@ -220,13 +218,15 @@ header h1{
 }
 
 .btn-income.active {
-    background-color: #4CAF50;
+    background: #4CAF50;
     color: white;
+    border: 2px solid #4CAF50;
 }
 
 .btn-expense.active {
-    background-color: #f44336;
+    background: #f44336;
     color: white;
+    border: 2px solid #f44336;
 }
 
 .show {

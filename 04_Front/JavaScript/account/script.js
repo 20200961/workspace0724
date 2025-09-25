@@ -38,20 +38,6 @@ function bindEvents(){
     })
 }
 
-function clearCompletedAccounts(){
-    let newAccounts = [];
-
-    for(let account of accounts){
-        if(!account.completed){
-            newAccounts.push(account);
-        }
-    }
-
-    accounts = newAccounts;
-    saveAccounts();
-    render();
-}
-
 function addAccount() {
     const description = productInput.value.trim();
     const amount = Number(priceInput.value);
@@ -115,6 +101,7 @@ function saveAccounts(){
 }
 
 function render(){
+    
     accountList.innerHTML = "";
 
     const filteredAccounts = getFilteredAccounts();
@@ -145,8 +132,8 @@ function accountItemRender(account){
     accountItem.className = 'account-item' + (account.completed ? 'completed' : '');
 
     accountItem.innerHTML = `<div class="account-info">
-            <span class="description">${account.description}</span>
             <span class="date">${account.date}</span>
+            <span class="description">${account.description}</span>
             </div>
             <span class="${amountClass}">${sign}${account.amount.toLocaleString()}원</span>
             <button class="delete-btn">삭제</button>`;
@@ -199,10 +186,3 @@ function updateCount() {
 
 
 document.addEventListener('DOMContentLoaded', init);
-
-
-
-
-
-
-
