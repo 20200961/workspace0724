@@ -9,8 +9,6 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
-
- 
 /**
  * 네트워크열어서 http요청 받아주는 객체
  * HttpServletRequest request = new HttpServletRequest();
