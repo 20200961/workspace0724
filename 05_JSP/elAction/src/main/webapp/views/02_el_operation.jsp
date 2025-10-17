@@ -8,7 +8,6 @@
 </head>
 <body>
     <h3>1. 산술 연산</h3>
-    기존 : 10 + 3 = <%= request.getAttribute("big") + (int)request.getAttribute("small") %>
 
     <br><br>
 
