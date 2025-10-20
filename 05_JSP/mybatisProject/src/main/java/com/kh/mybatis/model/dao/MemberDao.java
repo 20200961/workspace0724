@@ -1,6 +1,5 @@
 package com.kh.mybatis.model.dao;
 
-
 import java.util.HashMap;
 
 import org.apache.ibatis.session.SqlSession;

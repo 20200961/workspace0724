@@ -17,7 +17,7 @@ public class Template {
 			InputStream inputStream = Resources.getResourceAsStream(resource);
 			SqlSessionFactory sqlSessionFactory = new SqlSessionFactoryBuilder().build(inputStream);
 			
-			session = sqlSessionFactory.openSession(false); // flase -> 수동커밋
+			session = sqlSessionFactory.openSession(false);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
