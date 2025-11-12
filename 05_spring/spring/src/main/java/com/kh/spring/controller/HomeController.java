@@ -8,6 +8,8 @@ public class HomeController {
 
     @RequestMapping("/")
     public String home(){
+        // 공중화장실 목록을 받아서 페이지에 전달
+        //
         return "index";
     }
 }
