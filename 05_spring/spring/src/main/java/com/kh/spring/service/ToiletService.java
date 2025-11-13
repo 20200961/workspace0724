@@ -16,7 +16,7 @@ public class ToiletService {
 
         // http://openapi.seoul.go.kr:8088/인증키/응답형식/mgisToiletPoi/시작인덱스/끝인덱스/
         String url = String.format("%s/%s/json/mgisToiletPoi/%d/%d", API_URL,apiKey,start,end);
-        
+
 
         RestTemplate restTemplate = new RestTemplate();
     }
