@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import JavaScript from './components/JavaScript'
+import reactLogo from './assets/react.svg'
+import viteLogo from '/vite.svg'
 import './App.css'
 
 function App() {
@@ -7,7 +8,7 @@ function App() {
 
   return (
     <>
-      <JavaScript></JavaScript>
+      
     </>
   )
 }
