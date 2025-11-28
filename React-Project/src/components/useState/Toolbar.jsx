@@ -1,6 +1,5 @@
 import React from 'react';
 
-
 const Toolbar = ({ isLogin, onClickLogin, onClickLogout }) => {
   return (
     <div>

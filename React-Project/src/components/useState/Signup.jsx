@@ -18,7 +18,7 @@ const Signup = () => {
   const handleSubmit = (ev) => {
       ev.preventDefault(); // a태그나 submit같은 고유동작을 가진 태그의 이벤트를 중단해주기 위한 함수
       // onSubmit 자체에 서버로 데이터를 전송하고 페이지를 이동하는 기능이 있지만 react에서는
-      // form 태그 자체의 표준적인 구조는 사용하지만 이벤트기능은 SPA과는 맞지않아 사용하지 않음.
+      // form 태그 자체의 표준적인 구조는 사용하지만 이벤트기능은 SPA과는 맞지않아 사용하지 않는다.
       alert(`이름 : ${name}, 성별 : ${gender}`)
     }
   return (

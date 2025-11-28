@@ -9,7 +9,7 @@ import React, { useState } from 'react'
 
     React에서 setState와 같은 상태 업데이트 함수는 비동기적으로 작동한다.
     -> 상태 변경시 리렌더링이 되기 때문에 즉시 상태를 변경하면 반복적인 리렌더링이 발생할 수 있다.
-       리액트는 이를 모아서 한번에 반영해준다.
+       리액트는 이를 모아서 한번에 반영한다.
 
     setNum(prevNum => prevNum - 1)
     setNum(num -1)
