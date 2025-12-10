@@ -6,6 +6,7 @@ import com.kh.board.entity.Board;
 import com.kh.board.entity.Member;
 import com.kh.board.mapper.BoardMapper;
 import com.kh.board.service.BoardService;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -59,5 +60,55 @@ public class BoardController {
         } else{
             return new ResponseEntity<>("게시글 등록 실패", HttpStatus.BAD_REQUEST);
         }
+    }
+
+    @GetMapping("/{boardId}")
+    public ResponseEntity<BoardResponse.DetailDto> getBoard(@PathVariable Long boardId){
+        Board board = boardService.findOne(boardId);
+        BoardResponse.DetailDto result = BoardResponse.DetailDto.of(board);
+
+        return new ResponseEntity<>(result, HttpStatus.OK);
+    }
+
+    @DeleteMapping("/{boardId}")
+    public ResponseEntity<String> deleteBoard(@PathVariable Long boardId){
+       int result = boardService.delete(boardId);
+
+       return new ResponseEntity<>(result + "개의 게시글 삭제완료", HttpStatus.OK);
+    }
+
+    @PutMapping
+    public ResponseEntity<String> updateBoard(BoardRequest.UpdateDto request, MultipartFile upfile) throws IOException {
+        if(upfile != null && !upfile.isEmpty()){
+            File file = new File("C:\\workspace\\07_RestServer\\board\\src\\main\\resources\\uploads", upfile.getOriginalFilename());
+            upfile.transferTo(file);
+
+            request.setOrigin_name("/uploads/"+upfile.getOriginalFilename());
+        }
+
+        Board board = request.toEntity();
+
+        int result = boardService.update(board);
+
+        return new ResponseEntity<>("게시글 수정완료", HttpStatus.OK);
+    }
+
+    @PatchMapping
+    public ResponseEntity<String> updateBoard(BoardRequest.PatchDto request, MultipartFile upfile) throws IOException {
+        if(upfile != null && !upfile.isEmpty()){
+            File file = new File("C:\\workspace\\07_RestServer\\board\\src\\main\\resources\\uploads", upfile.getOriginalFilename());
+            upfile.transferTo(file);
+
+            request.setOrigin_name("/uploads/"+upfile.getOriginalFilename());
+        }
+
+        int result = boardService.patch(
+                request.getBoard_id(),
+                request.getTitle(),
+                request.getContents(),
+                request.getOrigin_name()
+        );
+
+        return new ResponseEntity<>("게시글 수정완료", HttpStatus.OK);
     }
 }

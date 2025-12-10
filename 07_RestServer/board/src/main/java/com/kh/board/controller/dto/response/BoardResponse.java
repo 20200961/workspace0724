@@ -13,7 +13,7 @@ public class BoardResponse {
     @Setter
     @Builder
     public static class SimpleDto{
-        private String board_id;
+        private Long board_id;
         private String member_email;
         private String title;
         private LocalDateTime created_at;
@@ -21,8 +21,31 @@ public class BoardResponse {
         public static SimpleDto of(Board board){
             return SimpleDto.builder()
                     .board_id(board.getBoardId())
-                    .member_email(board.getMemberEmail())
+//                    .member_email(board.getMemberEmail())
                     .title(board.getTitle())
+                    .created_at(board.getCreatedAt())
+                    .build();
+        }
+    }
+
+    @Getter
+    @Setter
+    @Builder
+    public static class DetailDto{
+        private Long board_id;
+        private String member_email;
+        private String title;
+        private String contents;
+        private String file_name;
+        private LocalDateTime created_at;
+
+        public static DetailDto of(Board board){
+            return DetailDto.builder()
+                    .board_id(board.getBoardId())
+//                    .member_email(board.getMemberEmail())
+                    .title(board.getTitle())
+                    .contents(board.getContents())
+                    .file_name(board.getFileName())
                     .created_at(board.getCreatedAt())
                     .build();
         }
