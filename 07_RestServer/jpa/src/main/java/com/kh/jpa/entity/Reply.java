@@ -1,48 +1,36 @@
 package com.kh.jpa.entity;
 
+import com.kh.jpa.enums.CommonEnums;
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.ColumnDefault;
-import org.hibernate.annotations.CreationTimestamp;
 
-import java.time.LocalDateTime;
-
-@Getter
-@AllArgsConstructor
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-@Builder
+@Builder @AllArgsConstructor
 @Entity
 @Table(name = "REPLY")
-public class Reply {
+@Getter @NoArgsConstructor(access = AccessLevel.PROTECTED)
+public class Reply extends BaseTimeEntity {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "reply_no")
     private Long replyNo;
 
-    @Column(name = "reply_content", nullable = false, length = 400)
+    @Column(length = 400, nullable = false)
     private String replyContent;
 
-    @CreationTimestamp
-    @Column(name = "create_date", nullable = false, updatable = false)
-    private LocalDateTime createDate;
+    @Column(length = 1, nullable = false)
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
+    private CommonEnums.Status status = CommonEnums.Status.Y;
 
-    @Column(name = "status", nullable = false, length = 1)
-    @ColumnDefault("'Y'")
-    private String status;
-
+    // === 연관관계 맵핑 ====
+    // 댓글 : 게시글 (N : 1) - 연관관계 주인
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ref_bno", nullable = false)
     private Board board;
 
+    // 댓글 : 댓글작성회원 (N : 1) - 연관관계 주인
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "reply_writer", nullable = false)
     private Member member;
 
-    public void updateReply(String replyContent) {
-        if(replyContent != null) this.replyContent = replyContent;
-    }
-
-    public void delete() {
-        this.status = "N";
-    }
 }

@@ -3,39 +3,25 @@ package com.kh.jpa.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.io.Serializable;
-
-@Getter
-@AllArgsConstructor
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Builder
+@AllArgsConstructor
 @Entity
-@Table(name = "BOARD_TAG")
+@Table(name = "board")
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class BoardTag {
 
-    @EmbeddedId
-    private BoardTagId id;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long boardTagId;
 
+    //==== 연관관계 ====
+    //게시글태그 : 게시글 (N : 1)
     @ManyToOne(fetch = FetchType.LAZY)
-    @MapsId("boardNo")
-    @JoinColumn(name = "board_no")
+    @JoinColumn(name = "board_no", nullable = false)
     private Board board;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @MapsId("tagId")
-    @JoinColumn(name = "tag_id")
+    @JoinColumn(name = "tag_id", nullable = false)
     private Tag tag;
-
-    @Embeddable
-    @Getter
-    @EqualsAndHashCode
-    @AllArgsConstructor
-    @NoArgsConstructor(access = AccessLevel.PROTECTED)
-    public static class BoardTagId implements Serializable {
-        @Column(name = "board_no")
-        private Long boardNo;
-
-        @Column(name = "tag_id")
-        private Long tagId;
-    }
 }

@@ -1,39 +1,31 @@
 package com.kh.jpa.entity;
 
 import jakarta.persistence.*;
-import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-import java.time.LocalDateTime;
 
 @Getter
-@AllArgsConstructor
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-@Builder
 @Entity
 @Table(name = "NOTICE")
-public class Notice {
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+public class Notice extends BaseTimeEntity{
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "notice_no")
-    private Long noticeNo;
+    private Long noticeId;
 
-    @Column(name = "notice_title", nullable = false, length = 30)
+    @Column(length = 30, nullable = false)
     private String noticeTitle;
 
-    @Column(name = "notice_content", nullable = false, length = 200)
+    @Column(length = 200, nullable = false)
     private String noticeContent;
 
-    @CreationTimestamp
-    @Column(name = "create_date", updatable = false)
-    private LocalDateTime createDate;
+    // ==== 연관관계 ====
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "notice_writer", nullable = false)
     private Member member;
-
-    public void updateNotice(String noticeTitle, String noticeContent) {
-        if(noticeTitle != null) this.noticeTitle = noticeTitle;
-        if(noticeContent != null) this.noticeContent = noticeContent;
-    }
 }

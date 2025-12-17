@@ -1,75 +1,46 @@
 package com.kh.jpa.entity;
 
+import com.kh.jpa.enums.CommonEnums;
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.ColumnDefault;
-import org.hibernate.annotations.CreationTimestamp;
 
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-
-@Getter
-@AllArgsConstructor
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-@Builder
+@Builder @AllArgsConstructor
 @Entity
-@Table(name = "BOARD")
-public class Board {
+@Table(name = "board")
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+public class Board extends BaseTimeEntity{
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "board_no")
-    private Long boardNo;
+    private Long boardId;
 
-    @Column(name = "board_title", nullable = false, length = 100)
+    @Column(length = 100, nullable = false)
     private String boardTitle;
 
+    //@Lob : 대용량 텍스트 데이터(CLOB) 매핑
+    @Column(nullable = false)
     @Lob
-    @Column(name = "board_content", nullable = false)
     private String boardContent;
 
-    @Column(name = "origin_name", length = 100)
+    @Column(length = 100)
     private String originName;
 
-    @Column(name = "change_name", length = 100)
+    @Column(length = 100)
     private String changeName;
 
-    @Column(name = "count")
-    @ColumnDefault("0")
-    private Integer count;
+    //@Builder.Default : 빌드패턴으로 객체생서시 count값이 없다면 기본값을 사용한다.
+    @Builder.Default
+    private Integer count = 0;
 
-    @CreationTimestamp
-    @Column(name = "create_date", updatable = false)
-    private LocalDateTime createDate;
+    @Column(length = 1, nullable = false)
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
+    private CommonEnums.Status status = CommonEnums.Status.Y;
 
-    @Column(name = "status", nullable = false, length = 1)
-    @ColumnDefault("'Y'")
-    private String status;
-
+    //==== 연관관계 ====
+    //게시글 : 회원 N : 1 -> 연관관계 주인
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "board_writer", nullable = false)
     private Member member;
-
-    @OneToMany(mappedBy = "board", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
-    private List<Reply> replies = new ArrayList<>();
-
-    @OneToMany(mappedBy = "board", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
-    private List<BoardTag> boardTags = new ArrayList<>();
-
-    public void updateBoard(String boardTitle, String boardContent, String originName, String changeName) {
-        if(boardTitle != null) this.boardTitle = boardTitle;
-        if(boardContent != null) this.boardContent = boardContent;
-        if(originName != null) this.originName = originName;
-        if(changeName != null) this.changeName = changeName;
-    }
-
-    public void increaseCount() {
-        this.count++;
-    }
-
-    public void delete() {
-        this.status = "N";
-    }
 }

@@ -3,29 +3,18 @@ package com.kh.jpa.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.util.ArrayList;
-import java.util.List;
-
-@Getter
-@AllArgsConstructor
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Builder
+@AllArgsConstructor
 @Entity
-@Table(name = "TAG")
+@Table(name = "tag")
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Tag {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "tag_id")
     private Long tagId;
 
-    @Column(name = "tag_name", nullable = false, unique = true, length = 30)
+    @Column(length = 30, nullable = false,unique = true)
     private String tagName;
-
-    @OneToMany(mappedBy = "tag", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
-    private List<BoardTag> boardTags = new ArrayList<>();
-
-    public void updateTagName(String tagName) {
-        if(tagName != null) this.tagName = tagName;
-    }
 }
