@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import styled from 'styled-components';
 import { useDecisions } from '../context/DecisionContext';
 import DecisionForm from '../components/Decision/DecisionForm';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import { ROUTES } from '../routes/routePaths';
 
 const Container = styled.div`
@@ -153,14 +154,33 @@ const EmptyMessage = styled.div`
 `;
 
 const DecisionListPage = () => {
-    const { decisions, addDecision, getStats } = useDecisions();
+    const { decisions, addDecision, getStats, loading, error } = useDecisions();
+    const { currentUser, isAuthenticated } = useAuth();
+    const navigate = useNavigate();
     const [showForm, setShowForm] = useState(false);
     const stats = getStats();
 
-    const handleAddDecision = (decisionData) => {
-        addDecision(decisionData);
-        setShowForm(false);
+    // handleAddDecision 함수 수정
+    const handleAddDecision = async (decisionData) => {
+        try {
+            await addDecision(decisionData);
+            setShowForm(false);
+        } catch (err) {
+            alert('의사결정 생성 실패: ' + err.message);
+        }
     };
+
+    // 로딩 상태 표시 추가
+    if (loading) {
+        return (
+            <Container>
+                <Title>의사결정 로그</Title>
+                <p style={{ textAlign: 'center', padding: '48px', color: '#999' }}>
+                    로딩 중...
+                </p>
+            </Container>
+        );
+    }
 
     const formatDate = (dateString) => {
         const date = new Date(dateString);

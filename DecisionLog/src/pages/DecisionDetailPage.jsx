@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { useDecisions } from '../context/DecisionContext';
 import { ROUTES } from '../routes/routePaths';
+import { decisionApi } from '../api/decisionApi';
 
 const Container = styled.div`
     max-width: 900px;
@@ -236,18 +237,73 @@ const RetrospectiveItem = styled.div`
     }
 `;
 
+const LoadingMessage = styled.div`
+    text-align: center;
+    padding: 48px;
+    color: #666;
+`;
+
 const DecisionDetailPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
-    const { getDecisionById, addRetrospective } = useDecisions();
-    const decision = getDecisionById(id);
-
+    const { addRetrospective, currentUser, isMyDecision } = useDecisions();
+    const [decision, setDecision] = useState(null);
+    const [loading, setLoading] = useState(true);
     const [showRetrospectiveForm, setShowRetrospectiveForm] = useState(false);
     const [retrospectiveData, setRetrospectiveData] = useState({
         actualResult: '',
         wasCorrect: 'yes',
         improvements: ''
     });
+
+    useEffect(() => {
+        const loadDecision = async () => {
+            try {
+                const data = await decisionApi.getDecision(id);
+                setDecision(data);
+            } catch (err) {
+                alert('의사결정을 불러오는데 실패했습니다: ' + err.message);
+                navigate(ROUTES.HOME);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        loadDecision();
+    }, [id, navigate]);
+
+    const formatDate = (dateString) => {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('ko-KR', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+    };
+
+    const handleAddRetrospective = async () => {
+        if (retrospectiveData.actualResult.trim() === '') {
+            alert('실제 결과를 입력해주세요.');
+            return;
+        }
+        
+        try {
+            const retrospective = await addRetrospective(decision.id, retrospectiveData);
+            setDecision(prev => ({ ...prev, retrospective }));
+            setShowRetrospectiveForm(false);
+            alert('회고가 저장되었습니다.');
+        } catch (err) {
+            alert('회고 저장 실패: ' + err.message);
+        }
+    };
+
+    if (loading) {
+        return (
+            <Container>
+                <LoadingMessage>로딩 중...</LoadingMessage>
+            </Container>
+        );
+    }
 
     if (!decision) {
         return (
@@ -258,23 +314,7 @@ const DecisionDetailPage = () => {
         );
     }
 
-    const formatDate = (dateString) => {
-        const date = new Date(dateString); // 이 부분 확인
-        return date.toLocaleDateString('ko-KR', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-        });
-    };
-
-    const handleAddRetrospective = () => {
-        if (retrospectiveData.actualResult.trim() === '') {
-            alert('실제 결과를 입력해주세요.');
-            return;
-        }
-        addRetrospective(decision.id, retrospectiveData);
-        setShowRetrospectiveForm(false);
-    };
+    const canEdit = decision && currentUser && decision.memberId === currentUser.id;
 
     return (
         <Container>
@@ -294,16 +334,16 @@ const DecisionDetailPage = () => {
             </Header>
 
             <Section>
-                <SectionTitle>📋 상황 설명</SectionTitle>
+                <SectionTitle>상황 설명</SectionTitle>
                 <Situation>{decision.situation}</Situation>
             </Section>
 
             <Section>
-                <SectionTitle>🔀 선택지 비교</SectionTitle>
+                <SectionTitle>선택지 비교</SectionTitle>
                 <OptionsGrid>
                     {decision.options.map((option, index) => (
                         <OptionCard
-                            key={index}
+                            key={option.id}
                             isSelected={option.name === decision.finalChoice}
                         >
                             <OptionHeader>
@@ -316,17 +356,17 @@ const DecisionDetailPage = () => {
                             </OptionHeader>
 
                             <OptionDetail>
-                                <DetailLabel>✅ 장점</DetailLabel>
+                                <DetailLabel>장점</DetailLabel>
                                 <DetailContent>{option.pros || '없음'}</DetailContent>
                             </OptionDetail>
 
                             <OptionDetail>
-                                <DetailLabel>⚠️ 단점</DetailLabel>
+                                <DetailLabel>단점</DetailLabel>
                                 <DetailContent>{option.cons || '없음'}</DetailContent>
                             </OptionDetail>
 
                             <OptionDetail>
-                                <DetailLabel>🚨 위험 요소</DetailLabel>
+                                <DetailLabel>위험 요소</DetailLabel>
                                 <DetailContent>{option.risks || '없음'}</DetailContent>
                             </OptionDetail>
                         </OptionCard>
@@ -335,7 +375,7 @@ const DecisionDetailPage = () => {
             </Section>
 
             <Section>
-                <SectionTitle>⚖️ 결정 기준</SectionTitle>
+                <SectionTitle>결정 기준</SectionTitle>
                 <CriteriaGrid>
                     <CriteriaItem>
                         <CriteriaName>속도</CriteriaName>
@@ -380,19 +420,27 @@ const DecisionDetailPage = () => {
             </Section>
 
             <Section>
-                <SectionTitle>🔍 결과 회고</SectionTitle>
+                <SectionTitle>결과 회고</SectionTitle>
                 {!decision.retrospective && !showRetrospectiveForm && (
                     <div>
-                        <p style={{ color: '#999', marginBottom: '16px' }}>
-                            아직 회고가 작성되지 않았습니다.
-                        </p>
-                        <Button onClick={() => setShowRetrospectiveForm(true)}>
-                            회고 작성하기
-                        </Button>
+                        {canEdit ? (
+                            <>
+                                <p style={{ color: '#999', marginBottom: '16px' }}>
+                                    아직 회고가 작성되지 않았습니다.
+                                </p>
+                                <Button onClick={() => setShowRetrospectiveForm(true)}>
+                                    회고 작성하기
+                                </Button>
+                            </>
+                        ) : (
+                            <p style={{ color: '#999', marginBottom: '16px' }}>
+                                아직 회고가 작성되지 않았습니다.
+                            </p>
+                        )}
                     </div>
                 )}
 
-                {showRetrospectiveForm && (
+                {showRetrospectiveForm && canEdit && (
                     <RetrospectiveForm>
                         <DetailLabel>실제 결과는 어땠나요?</DetailLabel>
                         <TextArea
@@ -459,8 +507,8 @@ const DecisionDetailPage = () => {
                             <DetailLabel>판단 평가</DetailLabel>
                             <DetailContent>
                                 {decision.retrospective.wasCorrect === 'yes'
-                                    ? '✅ 좋은 결정이었습니다'
-                                    : '⚠️ 아쉬운 점이 있습니다'}
+                                    ? '좋은 결정이었습니다'
+                                    : '아쉬운 점이 있습니다'}
                             </DetailContent>
                         </RetrospectiveItem>
 

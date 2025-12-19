@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { useDecisions } from '../context/DecisionContext';
 import { Link } from 'react-router-dom';
 import { ROUTES } from '../routes/routePaths';
+import { memberApi } from '../api/memberApi';
 
 const Container = styled.div`
     max-width: 1000px;
@@ -255,46 +256,169 @@ const EmptyMessage = styled.div`
     color: #999;
 `;
 
+const LoadingMessage = styled.div`
+    text-align: center;
+    padding: 48px;
+    color: #666;
+`;
+
+const Modal = styled.div`
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+`;
+
+const ModalContent = styled.div`
+    background: white;
+    padding: 32px;
+    border-radius: 12px;
+    max-width: 400px;
+    width: 90%;
+`;
+
+const ModalTitle = styled.h2`
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 24px;
+    color: #333;
+`;
+
+const Input = styled.input`
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #e2e2e2;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    outline: none;
+
+    &:focus {
+        border-color: #5833ffff;
+    }
+`;
+
+const ButtonGroup = styled.div`
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+`;
+
+const Button = styled.button`
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s;
+
+    &:hover {
+        scale: 0.98;
+    }
+`;
+
+const PrimaryButton = styled(Button)`
+    background: #5833ffff;
+    color: white;
+`;
+
+const SecondaryButton = styled(Button)`
+    background: #f0f0f0;
+    color: #333;
+`;
+
 const MyPage = () => {
-    const { decisions, getStats } = useDecisions();
-    const stats = getStats();
-    
-    // 프로필 정보 (나중에 Context나 로컬스토리지로 관리 가능)
-    const [profile] = useState({
-        name: '사용자',
-        email: 'user@example.com',
-        avatar: 'U'
+    const { getMyDecisions, currentUser, getStats } = useDecisions();
+    const [serverStats, setServerStats] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [editData, setEditData] = useState({
+        name: currentUser?.name || '',
+        email: currentUser?.email || ''
     });
 
-    // 최근 5개 결정
-    const recentDecisions = decisions.slice(0, 5);
+    useEffect(() => {
+        const fetchStats = async () => {
+            if (currentUser) {
+                try {
+                    const data = await memberApi.getStats(currentUser.id);
+                    setServerStats(data);
+                } catch (err) {
+                    console.error('통계 로드 실패:', err);
+                } finally {
+                    setLoading(false);
+                }
+            }
+        };
+        
+        fetchStats();
+    }, [currentUser]);
 
-    // 회고 완료율 계산
+    const localStats = getStats();
+    const stats = serverStats || localStats;
+    const myDecisions = getMyDecisions();
+    const recentDecisions = myDecisions.slice(0, 5);
+    
+    // 디버깅: 데이터 구조 확인
+    console.log('myDecisions:', myDecisions);
+    if (myDecisions.length > 0) {
+        console.log('첫 번째 decision 전체:', myDecisions[0]);
+        console.log('첫 번째 decision.criteria:', myDecisions[0].criteria);
+        console.log('모든 decision의 키들:', Object.keys(myDecisions[0]));
+    }
+
     const retrospectiveRate = stats.total > 0 
         ? Math.round((stats.withRetrospective / stats.total) * 100) 
         : 0;
 
-    // 팀/개인 비율 계산 (파이차트용)
     const teamPercentage = stats.total > 0
         ? (stats.team / stats.total) * 100
         : 0;
     const teamDeg = (360 * teamPercentage) / 100;
 
-    // 결정 기준 평균 계산
-    const criteriaAverages = decisions.reduce((acc, decision) => {
-        acc.speed += decision.criteria.speed;
-        acc.cost += decision.criteria.cost;
-        acc.scalability += decision.criteria.scalability;
-        acc.teamCapability += decision.criteria.teamCapability;
-        return acc;
-    }, { speed: 0, cost: 0, scalability: 0, teamCapability: 0 });
+    // criteria가 있는 결정만 필터링 - useMemo나 state로 처리하지 않고 매번 계산
+    const decisionsWithCriteria = myDecisions.filter(d => d.criteria);
+    
+    let criteriaAverages = { speed: 0, cost: 0, scalability: 0, teamCapability: 0 };
+    
+    if (decisionsWithCriteria.length > 0) {
+        const totals = decisionsWithCriteria.reduce((acc, decision) => {
+            acc.speed += decision.criteria.speed || 0;
+            acc.cost += decision.criteria.cost || 0;
+            acc.scalability += decision.criteria.scalability || 0;
+            acc.teamCapability += decision.criteria.teamCapability || 0;
+            return acc;
+        }, { speed: 0, cost: 0, scalability: 0, teamCapability: 0 });
 
-    if (stats.total > 0) {
-        criteriaAverages.speed = Math.round(criteriaAverages.speed / stats.total);
-        criteriaAverages.cost = Math.round(criteriaAverages.cost / stats.total);
-        criteriaAverages.scalability = Math.round(criteriaAverages.scalability / stats.total);
-        criteriaAverages.teamCapability = Math.round(criteriaAverages.teamCapability / stats.total);
+        criteriaAverages = {
+            speed: Math.round(totals.speed / decisionsWithCriteria.length),
+            cost: Math.round(totals.cost / decisionsWithCriteria.length),
+            scalability: Math.round(totals.scalability / decisionsWithCriteria.length),
+            teamCapability: Math.round(totals.teamCapability / decisionsWithCriteria.length)
+        };
     }
+    
+    console.log('decisionsWithCriteria:', decisionsWithCriteria);
+    console.log('criteriaAverages:', criteriaAverages);
+
+    const handleEditProfile = () => {
+        setEditData({
+            name: currentUser?.name || '',
+            email: currentUser?.email || ''
+        });
+        setShowEditModal(true);
+    };
+
+    const handleSaveProfile = () => {
+        console.log('프로필 수정:', editData);
+        alert('프로필 수정 기능은 추후 구현 예정입니다.');
+        setShowEditModal(false);
+    };
 
     const formatDate = (dateString) => {
         const date = new Date(dateString);
@@ -305,16 +429,55 @@ const MyPage = () => {
         });
     };
 
+    if (loading) {
+        return (
+            <Container>
+                <Title>마이페이지</Title>
+                <LoadingMessage>로딩 중...</LoadingMessage>
+            </Container>
+        );
+    }
+
     return (
         <Container>
+            {showEditModal && (
+                <Modal onClick={() => setShowEditModal(false)}>
+                    <ModalContent onClick={(e) => e.stopPropagation()}>
+                        <ModalTitle>프로필 수정</ModalTitle>
+                        <Input
+                            type="text"
+                            placeholder="이름"
+                            value={editData.name}
+                            onChange={(e) => setEditData({...editData, name: e.target.value})}
+                        />
+                        <Input
+                            type="email"
+                            placeholder="이메일"
+                            value={editData.email}
+                            onChange={(e) => setEditData({...editData, email: e.target.value})}
+                            disabled
+                            style={{ background: '#f5f5f5', cursor: 'not-allowed' }}
+                        />
+                        <ButtonGroup>
+                            <SecondaryButton onClick={() => setShowEditModal(false)}>
+                                취소
+                            </SecondaryButton>
+                            <PrimaryButton onClick={handleSaveProfile}>
+                                저장
+                            </PrimaryButton>
+                        </ButtonGroup>
+                    </ModalContent>
+                </Modal>
+            )}
+
             <Title>마이페이지</Title>
 
             <ProfileSection>
-                <Avatar>{profile.avatar}</Avatar>
+                <Avatar>{currentUser?.name?.charAt(0).toUpperCase() || 'U'}</Avatar>
                 <ProfileInfo>
-                    <ProfileName>{profile.name}</ProfileName>
-                    <ProfileEmail>{profile.email}</ProfileEmail>
-                    <EditButton>프로필 수정</EditButton>
+                    <ProfileName>{currentUser?.name || '사용자'}</ProfileName>
+                    <ProfileEmail>{currentUser?.email || ''}</ProfileEmail>
+                    <EditButton onClick={handleEditProfile}>프로필 수정</EditButton>
                 </ProfileInfo>
             </ProfileSection>
 
@@ -338,7 +501,7 @@ const MyPage = () => {
             </StatsGrid>
 
             <Section>
-                <SectionTitle>📊 의사결정 분석</SectionTitle>
+                <SectionTitle>의사결정 분석</SectionTitle>
                 <ChartContainer>
                     <ChartCard>
                         <ChartTitle>결정 유형 분포</ChartTitle>
@@ -363,7 +526,7 @@ const MyPage = () => {
 
                     <ChartCard>
                         <ChartTitle>주요 결정 기준 (평균)</ChartTitle>
-                        {stats.total > 0 ? (
+                        {decisionsWithCriteria.length > 0 ? (
                             <BarChart>
                                 <BarItem>
                                     <BarLabel>
@@ -403,14 +566,14 @@ const MyPage = () => {
                                 </BarItem>
                             </BarChart>
                         ) : (
-                            <EmptyMessage>데이터가 없습니다</EmptyMessage>
+                            <EmptyMessage>결정 기준 데이터가 없습니다</EmptyMessage>
                         )}
                     </ChartCard>
                 </ChartContainer>
             </Section>
 
             <Section>
-                <SectionTitle>🕒 최근 활동</SectionTitle>
+                <SectionTitle>최근 활동</SectionTitle>
                 {recentDecisions.length > 0 ? (
                     <RecentList>
                         {recentDecisions.map(decision => (

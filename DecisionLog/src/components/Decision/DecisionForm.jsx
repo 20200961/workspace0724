@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 
 const FormContainer = styled.div`
@@ -130,6 +130,20 @@ const AddOptionButton = styled(Button)`
     margin-top: 8px;
 `;
 
+const RemoveOptionButton = styled(Button)`
+    background: #ffe2e2;
+    color: #ff4444;
+    padding: 6px 12px;
+    font-size: 12px;
+`;
+
+const OptionHeader = styled.div`
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+`;
+
 const CriteriaSlider = styled.div`
     margin-bottom: 16px;
 `;
@@ -145,7 +159,7 @@ const Slider = styled.input`
     width: 100%;
 `;
 
-const DecisionForm = ({ onSubmit, onCancel }) => {
+const DecisionForm = ({ onSubmit, onCancel, initialData = null }) => {
     const [formData, setFormData] = useState({
         title: '',
         type: '개인',
@@ -162,6 +176,12 @@ const DecisionForm = ({ onSubmit, onCancel }) => {
             teamCapability: 3
         }
     });
+
+    useEffect(() => {
+        if (initialData) {
+            setFormData(initialData);
+        }
+    }, [initialData]);
 
     const handleChange = (field, value) => {
         setFormData(prev => ({
@@ -217,7 +237,7 @@ const DecisionForm = ({ onSubmit, onCancel }) => {
 
     return (
         <FormContainer>
-            <form onSubmit={handleSubmit}>
+            <div>
                 <FormSection>
                     <Label>결정 제목 *</Label>
                     <Input
@@ -252,14 +272,14 @@ const DecisionForm = ({ onSubmit, onCancel }) => {
                     <Label>선택지</Label>
                     {formData.options.map((option, index) => (
                         <OptionCard key={index}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                            <OptionHeader>
                                 <strong>선택지 {String.fromCharCode(65 + index)}</strong>
                                 {formData.options.length > 2 && (
-                                    <SecondaryButton type="button" onClick={() => removeOption(index)}>
+                                    <RemoveOptionButton type="button" onClick={() => removeOption(index)}>
                                         삭제
-                                    </SecondaryButton>
+                                    </RemoveOptionButton>
                                 )}
-                            </div>
+                            </OptionHeader>
                             <OptionInput
                                 type="text"
                                 value={option.name}
@@ -368,11 +388,11 @@ const DecisionForm = ({ onSubmit, onCancel }) => {
                             취소
                         </SecondaryButton>
                     )}
-                    <PrimaryButton type="submit">
-                        결정 기록하기
+                    <PrimaryButton type="button" onClick={handleSubmit}>
+                        {initialData ? '수정 완료' : '결정 기록하기'}
                     </PrimaryButton>
                 </ButtonGroup>
-            </form>
+            </div>
         </FormContainer>
     );
 };

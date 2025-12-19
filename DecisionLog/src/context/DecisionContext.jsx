@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { decisionApi } from '../api/decisionApi';
+import { memberApi } from '../api/memberApi';
 
 const DecisionContext = createContext();
 
@@ -8,65 +10,143 @@ export const useDecisions = () => {
 };
 
 export const DecisionProvider = ({ children }) => {
-    const [decisions, setDecisions] = useState(() => {
-        const savedDecisions = localStorage.getItem('decisions');
-        return savedDecisions ? JSON.parse(savedDecisions) : [];
+    const [decisions, setDecisions] = useState([]);
+    const [currentUser, setCurrentUser] = useState(() => {
+        const savedUser = localStorage.getItem('currentUser');
+        return savedUser ? JSON.parse(savedUser) : null;
     });
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
 
     useEffect(() => {
-        localStorage.setItem('decisions', JSON.stringify(decisions));
-    }, [decisions]);
+        if (currentUser) {
+            localStorage.setItem('currentUser', JSON.stringify(currentUser));
+        } else {
+            localStorage.removeItem('currentUser');
+        }
+    }, [currentUser]);
+
+    // 의사결정 목록 로드 - 전체 목록 가져오기 (memberId 파라미터 없이)
+    const loadDecisions = async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            // memberId 없이 호출하여 모든 의사결정 가져오기
+            const data = await decisionApi.getDecisions();
+            setDecisions(data);
+        } catch (err) {
+            setError(err.message);
+            console.error('의사결정 목록 로드 실패:', err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // 로그인 시 의사결정 목록 로드
+    useEffect(() => {
+        if (currentUser) {
+            loadDecisions();
+        }
+    }, [currentUser]);
+
+    // 회원가입
+    const register = async (email, name) => {
+        try {
+            const user = await memberApi.register(email, name);
+            setCurrentUser(user);
+            return user;
+        } catch (err) {
+            setError(err.message);
+            throw err;
+        }
+    };
+
+    // 로그인
+    const login = async (email) => {
+        try {
+            const user = await memberApi.login(email);
+            setCurrentUser(user);
+            return user;
+        } catch (err) {
+            setError(err.message);
+            throw err;
+        }
+    };
+
+    // 로그아웃
+    const logout = () => {
+        setCurrentUser(null);
+        setDecisions([]);
+        localStorage.removeItem('currentUser');
+    };
 
     // 의사결정 생성
-    const addDecision = (decisionData) => {
-        const newDecision = {
-            id: Date.now(),
-            title: decisionData.title,
-            decisionDate: new Date().toISOString(),
-            type: decisionData.type, // '개인' 또는 '팀'
-            situation: decisionData.situation,
-            options: decisionData.options, // [{ name, pros, cons, risks }]
-            finalChoice: decisionData.finalChoice,
-            criteria: decisionData.criteria, // { speed, cost, scalability, teamCapability }
-            retrospective: null, // 나중에 추가
-            createdAt: new Date().toISOString(),
-        };
+    const addDecision = async (decisionData) => {
+        if (!currentUser) {
+            throw new Error('로그인이 필요합니다.');
+        }
 
-        setDecisions(prev => [newDecision, ...prev]);
-        return newDecision;
+        try {
+            const newDecision = await decisionApi.createDecision({
+                ...decisionData,
+                memberId: currentUser.id,
+            });
+            
+            setDecisions(prev => [newDecision, ...prev]);
+            return newDecision;
+        } catch (err) {
+            setError(err.message);
+            throw err;
+        }
     };
 
-    // 의사결정 삭제
-    const deleteDecision = (id) => {
-        setDecisions(prev => prev.filter(decision => decision.id !== id));
+    // 의사결정 삭제 - 본인 것만 가능
+    const deleteDecision = async (id) => {
+        const decision = decisions.find(d => d.id === id);
+        
+        if (!decision) {
+            throw new Error('의사결정을 찾을 수 없습니다.');
+        }
+        
+        if (decision.memberId !== currentUser?.id) {
+            throw new Error('본인의 의사결정만 삭제할 수 있습니다.');
+        }
+
+        try {
+            await decisionApi.deleteDecision(id);
+            setDecisions(prev => prev.filter(decision => decision.id !== id));
+        } catch (err) {
+            setError(err.message);
+            throw err;
+        }
     };
 
-    // 의사결정 수정
-    const updateDecision = (id, updateData) => {
-        setDecisions(prev =>
-            prev.map(decision =>
-                decision.id === id ? { ...decision, ...updateData } : decision
-            )
-        );
-    };
+    // 회고 추가/수정 - 본인 것만 가능
+    const addRetrospective = async (id, retrospectiveData) => {
+        const decision = decisions.find(d => d.id === id);
+        
+        if (!decision) {
+            throw new Error('의사결정을 찾을 수 없습니다.');
+        }
+        
+        if (decision.memberId !== currentUser?.id) {
+            throw new Error('본인의 의사결정만 회고를 작성할 수 있습니다.');
+        }
 
-    // 회고 추가/수정
-    const addRetrospective = (id, retrospectiveData) => {
-        setDecisions(prev =>
-            prev.map(decision =>
-                decision.id === id
-                    ? {
-                        ...decision,
-                        retrospective: {
-                            actualResult: retrospectiveData.actualResult,
-                            wasCorrect: retrospectiveData.wasCorrect,
-                            improvements: retrospectiveData.improvements,
-                            updatedAt: new Date().toISOString(),
-                        }
-                    }
-                    : decision
-            )
-        );
+        try {
+            const retrospective = await decisionApi.addRetrospective(id, retrospectiveData);
+            
+            setDecisions(prev =>
+                prev.map(decision =>
+                    decision.id === id
+                        ? { ...decision, retrospective }
+                        : decision
+                )
+            );
+        } catch (err) {
+            setError(err.message);
+            throw err;
+        }
     };
 
     // ID로 의사결정 찾기
@@ -74,24 +154,45 @@ export const DecisionProvider = ({ children }) => {
         return decisions.find(decision => decision.id === parseInt(id));
     };
 
-    // 통계 가져오기
+    // 본인 의사결정만 필터링
+    const getMyDecisions = () => {
+        if (!currentUser) return [];
+        return decisions.filter(d => d.memberId === currentUser.id);
+    };
+
+    // 통계 가져오기 - 전체 통계
     const getStats = () => {
-        const total = decisions.length;
-        const personal = decisions.filter(d => d.type === '개인').length;
-        const team = decisions.filter(d => d.type === '팀').length;
-        const withRetrospective = decisions.filter(d => d.retrospective !== null).length;
+        const myDecisions = getMyDecisions();
+        const total = myDecisions.length;
+        const personal = myDecisions.filter(d => d.type === '개인').length;
+        const team = myDecisions.filter(d => d.type === '팀').length;
+        const withRetrospective = myDecisions.filter(d => d.retrospective !== null).length;
 
         return { total, personal, team, withRetrospective };
     };
 
+    // 의사결정이 본인 것인지 확인
+    const isMyDecision = (decisionId) => {
+        const decision = decisions.find(d => d.id === decisionId);
+        return decision && decision.memberId === currentUser?.id;
+    };
+
     const value = {
-        decisions,
+        decisions,              // 전체 의사결정 목록
+        currentUser,
+        loading,
+        error,
+        register,
+        login,
+        logout,
         addDecision,
         deleteDecision,
-        updateDecision,
         addRetrospective,
         getDecisionById,
+        getMyDecisions,         // 내 의사결정만
         getStats,
+        loadDecisions,
+        isMyDecision,           // 권한 체크용
     };
 
     return (
