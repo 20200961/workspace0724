@@ -1,12 +1,11 @@
 package com.kh.jpa2.controller;
 
+import com.kh.jpa2.dto.MemberDto;
 import com.kh.jpa2.service.MemberService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/members")
@@ -16,26 +15,26 @@ public class MemberController {
     private final MemberService memberService;
 
     @PostMapping
-    public ResponseEntity<Map<String, Object>> register(@RequestBody Map<String, String> request) {
-        Map<String, Object> response = memberService.register(request);
+    public ResponseEntity<MemberDto.Response> register(@RequestBody MemberDto.Create createDto) {
+        MemberDto.Response response = memberService.register(createDto);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @PostMapping("/login")
-    public ResponseEntity<Map<String, Object>> login(@RequestBody Map<String, String> request) {
-        Map<String, Object> response = memberService.login(request);
+    public ResponseEntity<MemberDto.Response> login(@RequestBody MemberDto.Login loginDto) {
+        MemberDto.Response response = memberService.login(loginDto);
         return ResponseEntity.ok(response);
     }
 
     @GetMapping("/{memberId}")
-    public ResponseEntity<Map<String, Object>> getMember(@PathVariable Long memberId) {
-        Map<String, Object> response = memberService.getMember(memberId);
+    public ResponseEntity<MemberDto.Response> getMember(@PathVariable Long memberId) {
+        MemberDto.Response response = memberService.getMember(memberId);
         return ResponseEntity.ok(response);
     }
 
     @GetMapping("/{memberId}/stats")
-    public ResponseEntity<Map<String, Long>> getStats(@PathVariable Long memberId) {
-        Map<String, Long> response = memberService.getStats(memberId);
+    public ResponseEntity<MemberDto.Stats> getStats(@PathVariable Long memberId) {
+        MemberDto.Stats response = memberService.getStats(memberId);
         return ResponseEntity.ok(response);
     }
 }

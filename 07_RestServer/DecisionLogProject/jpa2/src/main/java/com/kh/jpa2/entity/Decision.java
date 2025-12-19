@@ -2,7 +2,6 @@ package com.kh.jpa2.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -14,7 +13,7 @@ import java.util.List;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
-public class Decision {
+public class Decision extends BaseTimeEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -24,24 +23,20 @@ public class Decision {
     @JoinColumn(name = "member_id", nullable = false)
     private Member member;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 200)
     private String title;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 10)
     private String type;
 
     @Column(columnDefinition = "TEXT", nullable = false)
     private String situation;
 
-    @Column
+    @Column(length = 100)
     private String finalChoice;
 
-    @CreationTimestamp
+    @Column(nullable = false)
     private LocalDateTime decisionDate;
-
-    @CreationTimestamp
-    @Column(updatable = false)
-    private LocalDateTime createdAt;
 
     @OneToMany(mappedBy = "decision", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
@@ -53,15 +48,22 @@ public class Decision {
     @OneToOne(mappedBy = "decision", cascade = CascadeType.ALL, orphanRemoval = true)
     private Retrospective retrospective;
 
+    public void changeMember(Member member) {
+        this.member = member;
+        if (!member.getDecisions().contains(this)) {
+            member.getDecisions().add(this);
+        }
+    }
+
     public void addOption(Option option) {
-        options.add(option);
-        option.setDecision(this);
+        this.options.add(option);
+        option.changeDecision(this);
     }
 
     public void setRetrospective(Retrospective retrospective) {
         this.retrospective = retrospective;
         if (retrospective != null) {
-            retrospective.setDecision(this);
+            retrospective.changeDecision(this);
         }
     }
 }

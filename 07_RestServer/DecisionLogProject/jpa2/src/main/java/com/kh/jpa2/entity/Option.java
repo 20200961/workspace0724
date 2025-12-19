@@ -6,7 +6,6 @@ import lombok.*;
 @Entity
 @Table(name = "options")
 @Getter
-@Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
@@ -20,6 +19,7 @@ public class Option {
     @JoinColumn(name = "decision_id", nullable = false)
     private Decision decision;
 
+    @Column(length = 100)
     private String name;
 
     @Column(columnDefinition = "TEXT")
@@ -30,4 +30,8 @@ public class Option {
 
     @Column(columnDefinition = "TEXT")
     private String risks;
+
+    public void changeDecision(Decision decision) {
+        this.decision = decision;
+    }
 }

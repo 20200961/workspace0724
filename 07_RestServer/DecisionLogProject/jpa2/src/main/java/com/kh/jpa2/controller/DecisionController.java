@@ -1,5 +1,7 @@
 package com.kh.jpa2.controller;
 
+import com.kh.jpa2.dto.DecisionDto;
+import com.kh.jpa2.dto.RetrospectiveDto;
 import com.kh.jpa2.service.DecisionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -17,21 +19,21 @@ public class DecisionController {
     private final DecisionService decisionService;
 
     @PostMapping
-    public ResponseEntity<Map<String, Object>> createDecision(@RequestBody Map<String, Object> request) {
-        Map<String, Object> response = decisionService.createDecision(request);
+    public ResponseEntity<DecisionDto.Response> createDecision(@RequestBody DecisionDto.Create createDto) {
+        DecisionDto.Response response = decisionService.createDecision(createDto);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @GetMapping
-    public ResponseEntity<List<Map<String, Object>>> getDecisions(
+    public ResponseEntity<List<DecisionDto.ListResponse>> getDecisions(
             @RequestParam(required = false) Long memberId) {
-        List<Map<String, Object>> response = decisionService.getDecisions(memberId);
+        List<DecisionDto.ListResponse> response = decisionService.getDecisions(memberId);
         return ResponseEntity.ok(response);
     }
 
     @GetMapping("/{decisionId}")
-    public ResponseEntity<Map<String, Object>> getDecision(@PathVariable Long decisionId) {
-        Map<String, Object> response = decisionService.getDecision(decisionId);
+    public ResponseEntity<DecisionDto.Response> getDecision(@PathVariable Long decisionId) {
+        DecisionDto.Response response = decisionService.getDecision(decisionId);
         return ResponseEntity.ok(response);
     }
 
@@ -42,10 +44,10 @@ public class DecisionController {
     }
 
     @PostMapping("/{decisionId}/retrospective")
-    public ResponseEntity<Map<String, Object>> addRetrospective(
+    public ResponseEntity<RetrospectiveDto.Response> addRetrospective(
             @PathVariable Long decisionId,
-            @RequestBody Map<String, String> request) {
-        Map<String, Object> response = decisionService.addRetrospective(decisionId, request);
+            @RequestBody RetrospectiveDto.Create createDto) {
+        RetrospectiveDto.Response response = decisionService.addRetrospective(decisionId, createDto);
         return ResponseEntity.ok(response);
     }
 }

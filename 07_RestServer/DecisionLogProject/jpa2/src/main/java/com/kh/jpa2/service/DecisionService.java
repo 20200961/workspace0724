@@ -1,13 +1,19 @@
 package com.kh.jpa2.service;
 
-import com.kh.jpa2.entity.*;
+import com.kh.jpa2.dto.DecisionDto;
+import com.kh.jpa2.dto.OptionDto;
+import com.kh.jpa2.dto.RetrospectiveDto;
+import com.kh.jpa2.entity.Decision;
+import com.kh.jpa2.entity.Member;
+import com.kh.jpa2.entity.Option;
+import com.kh.jpa2.entity.Retrospective;
+import com.kh.jpa2.repository.DecisionRepository;
+import com.kh.jpa2.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import jakarta.persistence.EntityManager;
-import java.time.LocalDateTime;
-import java.util.*;
+import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
@@ -15,193 +21,130 @@ import java.util.stream.Collectors;
 @Transactional(readOnly = true)
 public class DecisionService {
 
-    private final EntityManager em;
+    private final DecisionRepository decisionRepository;
+    private final MemberRepository memberRepository;
 
     @Transactional
-    public Map<String, Object> createDecision(Map<String, Object> request) {
-        Long memberId = ((Number) request.get("memberId")).longValue();
-        Member member = em.find(Member.class, memberId);
-
-        if (member == null) {
-            throw new IllegalArgumentException("회원을 찾을 수 없습니다. ID: " + memberId);
-        }
-
-        // Criteria 생성
-        @SuppressWarnings("unchecked")
-        Map<String, Integer> criteriaMap = (Map<String, Integer>) request.get("criteria");
-        Criteria criteria = Criteria.builder()
-                .speed(criteriaMap.get("speed"))
-                .cost(criteriaMap.get("cost"))
-                .scalability(criteriaMap.get("scalability"))
-                .teamCapability(criteriaMap.get("teamCapability"))
-                .build();
+    public DecisionDto.Response createDecision(DecisionDto.Create createDto) {
+        // 회원 조회
+        Member member = memberRepository.findById(createDto.getMemberId())
+                .orElseThrow(() -> new IllegalArgumentException("회원을 찾을 수 없습니다. ID: " + createDto.getMemberId()));
 
         // Decision 생성
-        Decision decision = Decision.builder()
-                .member(member)
-                .title((String) request.get("title"))
-                .type((String) request.get("type"))
-                .situation((String) request.get("situation"))
-                .finalChoice((String) request.get("finalChoice"))
-                .criteria(criteria)
-                .build();
+        Decision decision = createDto.toEntity();
+        decision.changeMember(member);
 
-        em.persist(decision);
-
-        // Options 생성
-        @SuppressWarnings("unchecked")
-        List<Map<String, String>> optionsList = (List<Map<String, String>>) request.get("options");
-
-        if (optionsList != null) {
-            for (Map<String, String> optionMap : optionsList) {
-                Option option = Option.builder()
-                        .name(optionMap.get("name"))
-                        .pros(optionMap.get("pros"))
-                        .cons(optionMap.get("cons"))
-                        .risks(optionMap.get("risks"))
-                        .build();
-
+        // Options 추가
+        if (createDto.getOptions() != null) {
+            for (OptionDto.Create optionDto : createDto.getOptions()) {
+                Option option = optionDto.toEntity();
                 decision.addOption(option);
-                em.persist(option);
             }
         }
+
+        decisionRepository.save(decision);
 
         return convertToResponse(decision);
     }
 
-    public List<Map<String, Object>> getDecisions(Long memberId) {
-        String jpql;
+    public List<DecisionDto.ListResponse> getDecisions(Long memberId) {
+        List<Decision> decisions;
 
         if (memberId != null) {
-            jpql = "SELECT d FROM Decision d WHERE d.member.id = :memberId ORDER BY d.decisionDate DESC";
-            return em.createQuery(jpql, Decision.class)
-                    .setParameter("memberId", memberId)
-                    .getResultList()
-                    .stream()
-                    .map(this::convertToListResponse)
-                    .collect(Collectors.toList());
+            decisions = decisionRepository.findByMemberId(memberId);
         } else {
-            jpql = "SELECT d FROM Decision d ORDER BY d.decisionDate DESC";
-            return em.createQuery(jpql, Decision.class)
-                    .getResultList()
-                    .stream()
-                    .map(this::convertToListResponse)
-                    .collect(Collectors.toList());
+            decisions = decisionRepository.findAll();
         }
+
+        return decisions.stream()
+                .map(this::convertToListResponse)
+                .collect(Collectors.toList());
     }
 
-    public Map<String, Object> getDecision(Long decisionId) {
-        Decision decision = em.find(Decision.class, decisionId);
-
-        if (decision == null) {
-            throw new IllegalArgumentException("의사결정을 찾을 수 없습니다. ID: " + decisionId);
-        }
+    public DecisionDto.Response getDecision(Long decisionId) {
+        Decision decision = decisionRepository.findById(decisionId)
+                .orElseThrow(() -> new IllegalArgumentException("의사결정을 찾을 수 없습니다. ID: " + decisionId));
 
         return convertToResponse(decision);
     }
 
     @Transactional
     public void deleteDecision(Long decisionId) {
-        Decision decision = em.find(Decision.class, decisionId);
+        Decision decision = decisionRepository.findById(decisionId)
+                .orElseThrow(() -> new IllegalArgumentException("의사결정을 찾을 수 없습니다. ID: " + decisionId));
 
-        if (decision == null) {
-            throw new IllegalArgumentException("의사결정을 찾을 수 없습니다. ID: " + decisionId);
-        }
-
-        em.remove(decision);
+        decisionRepository.delete(decision);
     }
 
     @Transactional
-    public Map<String, Object> addRetrospective(Long decisionId, Map<String, String> request) {
-        Decision decision = em.find(Decision.class, decisionId);
+    public RetrospectiveDto.Response addRetrospective(Long decisionId, RetrospectiveDto.Create createDto) {
+        Decision decision = decisionRepository.findById(decisionId)
+                .orElseThrow(() -> new IllegalArgumentException("의사결정을 찾을 수 없습니다. ID: " + decisionId));
 
-        if (decision == null) {
-            throw new IllegalArgumentException("의사결정을 찾을 수 없습니다. ID: " + decisionId);
-        }
-
-        Retrospective retrospective = Retrospective.builder()
-                .actualResult(request.get("actualResult"))
-                .wasCorrect(request.get("wasCorrect"))
-                .improvements(request.get("improvements"))
-                .build();
-
+        Retrospective retrospective = createDto.toEntity();
         decision.setRetrospective(retrospective);
-        em.persist(retrospective);
 
-        Map<String, Object> response = new HashMap<>();
-        response.put("actualResult", retrospective.getActualResult());
-        response.put("wasCorrect", retrospective.getWasCorrect());
-        response.put("improvements", retrospective.getImprovements());
-        response.put("updatedAt", retrospective.getUpdatedAt());
-
-        return response;
+        return RetrospectiveDto.Response.of(
+                retrospective.getActualResult(),
+                retrospective.getWasCorrect(),
+                retrospective.getImprovements(),
+                retrospective.getUpdatedAt()
+        );
     }
 
     // Helper methods
-    private Map<String, Object> convertToResponse(Decision decision) {
-        Map<String, Object> response = new HashMap<>();
-        response.put("id", decision.getId());
-        response.put("memberId", decision.getMember().getId());
-        response.put("title", decision.getTitle());
-        response.put("type", decision.getType());
-        response.put("situation", decision.getSituation());
-        response.put("finalChoice", decision.getFinalChoice());
-        response.put("decisionDate", decision.getDecisionDate());
-        response.put("createdAt", decision.getCreatedAt());
-
-        List<Map<String, Object>> options = decision.getOptions().stream()
-                .map(this::convertOption)
+    private DecisionDto.Response convertToResponse(Decision decision) {
+        List<OptionDto.Response> options = decision.getOptions().stream()
+                .map(option -> OptionDto.Response.of(
+                        option.getId(),
+                        option.getName(),
+                        option.getPros(),
+                        option.getCons(),
+                        option.getRisks()
+                ))
                 .collect(Collectors.toList());
-        response.put("options", options);
 
-        response.put("criteria", convertCriteria(decision.getCriteria()));
+        DecisionDto.CriteriaDto criteriaDto = new DecisionDto.CriteriaDto(
+                decision.getCriteria().getSpeed(),
+                decision.getCriteria().getCost(),
+                decision.getCriteria().getScalability(),
+                decision.getCriteria().getTeamCapability()
+        );
 
+        RetrospectiveDto.Response retrospectiveDto = null;
         if (decision.getRetrospective() != null) {
-            response.put("retrospective", convertRetrospective(decision.getRetrospective()));
-        } else {
-            response.put("retrospective", null);
+            Retrospective retro = decision.getRetrospective();
+            retrospectiveDto = RetrospectiveDto.Response.of(
+                    retro.getActualResult(),
+                    retro.getWasCorrect(),
+                    retro.getImprovements(),
+                    retro.getUpdatedAt()
+            );
         }
 
-        return response;
+        return DecisionDto.Response.of(
+                decision.getId(),
+                decision.getMember().getId(),
+                decision.getTitle(),
+                decision.getType(),
+                decision.getSituation(),
+                decision.getFinalChoice(),
+                decision.getDecisionDate(),
+                decision.getCreatedAt(),
+                options,
+                criteriaDto,
+                retrospectiveDto
+        );
     }
 
-    private Map<String, Object> convertToListResponse(Decision decision) {
-        Map<String, Object> response = new HashMap<>();
-        response.put("id", decision.getId());
-        response.put("memberId", decision.getMember().getId());
-        response.put("title", decision.getTitle());
-        response.put("type", decision.getType());
-        response.put("finalChoice", decision.getFinalChoice());
-        response.put("decisionDate", decision.getDecisionDate());
-
-        return response;
-    }
-
-    private Map<String, Object> convertOption(Option option) {
-        Map<String, Object> result = new HashMap<>();
-        result.put("id", option.getId());
-        result.put("name", option.getName());
-        result.put("pros", option.getPros());
-        result.put("cons", option.getCons());
-        result.put("risks", option.getRisks());
-        return result;
-    }
-
-    private Map<String, Object> convertCriteria(Criteria criteria) {
-        Map<String, Object> result = new HashMap<>();
-        result.put("speed", criteria.getSpeed());
-        result.put("cost", criteria.getCost());
-        result.put("scalability", criteria.getScalability());
-        result.put("teamCapability", criteria.getTeamCapability());
-        return result;
-    }
-
-    private Map<String, Object> convertRetrospective(Retrospective retrospective) {
-        Map<String, Object> result = new HashMap<>();
-        result.put("actualResult", retrospective.getActualResult());
-        result.put("wasCorrect", retrospective.getWasCorrect());
-        result.put("improvements", retrospective.getImprovements());
-        result.put("updatedAt", retrospective.getUpdatedAt());
-        return result;
+    private DecisionDto.ListResponse convertToListResponse(Decision decision) {
+        return DecisionDto.ListResponse.of(
+                decision.getId(),
+                decision.getMember().getId(),
+                decision.getTitle(),
+                decision.getType(),
+                decision.getFinalChoice(),
+                decision.getDecisionDate()
+        );
     }
 }
