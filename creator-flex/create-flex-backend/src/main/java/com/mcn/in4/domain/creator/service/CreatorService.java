@@ -1,6 +1,5 @@
 package com.mcn.in4.domain.creator.service;
 
-import com.mcn.in4.domain.creator.dto.CreatorDto;
 import com.mcn.in4.domain.creator.repository.CreatorDetailRepository;
 import com.mcn.in4.domain.creator.repository.CreatorRepository;
 import com.mcn.in4.domain.creator.repository.MemberProfileRepository;
@@ -17,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -29,188 +29,156 @@ public class CreatorService {
     private final MemberProfileRepository memberProfileRepository;
     private final PasswordEncoder passwordEncoder;
 
-    /**
-     * 크리에이터 등록
-     */
     @Transactional
-    public Long createCreator(String memberName, String creatorPlatform, String creatorSubscribe,
-                              String creatorCategory, String memberAccount, String memberPassword,
-                              Long memberManagerId, String creatorStatus) {
-        // 사번 중복 체크
-        if (creatorRepository.existsByMemberAccount(memberAccount)) {
-            throw new IllegalArgumentException("이미 존재하는 사번입니다: " + memberAccount);
-        }
+    public Long createCreator(CreatorDto.CreateRequest request) {
+        validateDuplicateAccount(request.getMemberAccount());
 
-        // 담당 매니저 조회
-        Member manager = creatorRepository.findById(memberManagerId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 매니저입니다: " + memberManagerId));
-
-        if (manager.getMemberRole() != MemberRole.MANAGER) {
-            throw new IllegalArgumentException("매니저 권한이 없는 사용자입니다");
-        }
-
-        // 크리에이터 회원 생성
-        Member creator = Member.builder()
-                .memberAccount(memberAccount)
-                .memberPassword(passwordEncoder.encode(memberPassword))
-                .memberName(memberName)
-                .memberRole(MemberRole.CREATOR)
-                .memberStatus(MemberStatus.WORKING)
-                .build();
-
+        Member manager = findAndValidateManager(request.getMemberManagerId());
+        Member creator = buildCreator(request);
         creatorRepository.save(creator);
 
-        // Enum 변환
-        CreatorPlatform platform = CreatorPlatform.valueOf(creatorPlatform);
-        CreatorStatus status = CreatorStatus.valueOf(creatorStatus);
-
-        // 크리에이터 상세 정보 생성
-        MemberCreatorDetail creatorDetail = MemberCreatorDetail.builder()
-                .memberCreator(creator)
-                .memberManager(manager)
-                .creatorSubscribe(creatorSubscribe)
-                .creatorCategory(creatorCategory)
-                .creatorPlatform(platform)
-                .creatorStatus(status)
-                .build();
-
-        creatorDetailRepository.save(creatorDetail);
+        MemberCreatorDetail detail = buildCreatorDetail(request, creator, manager);
+        creatorDetailRepository.save(detail);
 
         return creator.getMemberId();
     }
 
-    /**
-     * 크리에이터 목록 조회 (관리자, 매니저)
-     */
     public List<CreatorDto.Response> getAllCreators() {
-        List<Member> creators = creatorRepository.findByMemberRoleAndMemberStatus(
+        List<Member> creators = creatorRepository.findAllCreatorsWithDepartment(
                 MemberRole.CREATOR, MemberStatus.WORKING);
-
-        return creators.stream()
-                .map(creator -> {
-                    MemberCreatorDetail detail = creatorDetailRepository
-                            .findByMemberCreator_MemberId(creator.getMemberId())
-                            .orElseThrow(() -> new IllegalArgumentException("크리에이터 상세 정보가 없습니다"));
-
-                    MemberProfile profile = memberProfileRepository
-                            .findByMember_MemberId(creator.getMemberId())
-                            .orElse(null);
-
-                    if (profile != null) {
-                        return CreatorDto.Response.fromWithProfile(
-                                creator, detail, profile.getProfileImage(), profile.getProfileBanner());
-                    } else {
-                        return CreatorDto.Response.from(creator, detail);
-                    }
-                })
-                .collect(Collectors.toList());
+        return buildCreatorResponses(creators);
     }
 
-    /**
-     * 크리에이터 상세 조회
-     */
     public CreatorDto.Response getCreatorById(Long creatorId) {
-        Member creator = creatorRepository.findByMemberIdAndMemberRoleAndMemberStatus(
-                        creatorId, MemberRole.CREATOR, MemberStatus.WORKING)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 크리에이터입니다: " + creatorId));
+        Member creator = findCreatorById(creatorId);
+        MemberCreatorDetail detail = findCreatorDetailById(creatorId);
+        MemberProfile profile = findProfileById(creatorId);
+        return buildCreatorResponse(creator, detail, profile);
+    }
 
-        MemberCreatorDetail detail = creatorDetailRepository
-                .findByMemberCreator_MemberId(creatorId)
-                .orElseThrow(() -> new IllegalArgumentException("크리에이터 상세 정보가 없습니다"));
+    @Transactional
+    public CreatorDto.Response updateCreator(Long creatorId, CreatorDto.UpdateRequest request) {
+        Member creator = findCreatorById(creatorId);
+        MemberCreatorDetail detail = findCreatorDetailById(creatorId);
 
-        MemberProfile profile = memberProfileRepository
-                .findByMember_MemberId(creatorId)
-                .orElse(null);
+        if (hasCreatorInfoChanged(request)) {
+            creator = updateCreatorMember(creator, request);
+        }
 
-        if (profile != null) {
-            return CreatorDto.Response.fromWithProfile(
-                    creator, detail, profile.getProfileImage(), profile.getProfileBanner());
-        } else {
-            return CreatorDto.Response.from(creator, detail);
+        Member manager = getUpdatedManager(detail, request.getMemberManagerId());
+        detail = updateCreatorDetail(creator, detail, manager, request);
+
+        return buildCreatorResponse(creator, detail, findProfileById(creatorId));
+    }
+
+    @Transactional
+    public void deleteCreator(Long creatorId) {
+        Member creator = findCreatorById(creatorId);
+        creatorRepository.save(buildDeletedCreator(creator));
+    }
+
+    public List<CreatorDto.Response> getMyCreators(Long managerId) {
+        List<Member> creators = creatorRepository.findCreatorsByManagerIdWithDepartment(
+                managerId, MemberRole.CREATOR, MemberStatus.WORKING);
+        return buildCreatorResponses(creators);
+    }
+
+    // ========== Private Helper Methods ==========
+
+    private void validateDuplicateAccount(String memberAccount) {
+        if (creatorRepository.existsByMemberAccount(memberAccount)) {
+            throw new IllegalArgumentException("이미 존재하는 사번입니다: " + memberAccount);
         }
     }
 
-    /**
-     * 크리에이터 정보 수정 (관리자)
-     */
-    @Transactional
-    public CreatorDto.Response updateCreator(Long creatorId, String memberName, String creatorPlatform,
-                                             String creatorSubscribe, String creatorCategory, String memberAccount,
-                                             String memberPassword, Long memberManagerId, String creatorStatus) {
-        Member creator = creatorRepository.findByMemberIdAndMemberRoleAndMemberStatus(
+    private Member findAndValidateManager(Long managerId) {
+        return creatorRepository.findManagerById(managerId, MemberRole.MANAGER)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 매니저입니다: " + managerId));
+    }
+
+    private Member findCreatorById(Long creatorId) {
+        return creatorRepository.findCreatorByIdWithDepartment(
                         creatorId, MemberRole.CREATOR, MemberStatus.WORKING)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 크리에이터입니다: " + creatorId));
+    }
 
-        MemberCreatorDetail detail = creatorDetailRepository
-                .findByMemberCreator_MemberId(creatorId)
+    private MemberCreatorDetail findCreatorDetailById(Long creatorId) {
+        return creatorDetailRepository.findByCreatorIdWithManager(creatorId)
                 .orElseThrow(() -> new IllegalArgumentException("크리에이터 상세 정보가 없습니다"));
+    }
 
-        // Member 정보 업데이트
-        if (memberName != null || memberAccount != null || memberPassword != null) {
-            creator = Member.builder()
-                    .memberId(creator.getMemberId())
-                    .memberAccount(memberAccount != null ? memberAccount : creator.getMemberAccount())
-                    .memberPassword(memberPassword != null ?
-                            passwordEncoder.encode(memberPassword) : creator.getMemberPassword())
-                    .memberName(memberName != null ? memberName : creator.getMemberName())
-                    .memberRole(creator.getMemberRole())
-                    .memberStatus(creator.getMemberStatus())
-                    .department(creator.getDepartment())
-                    .build();
-            creatorRepository.save(creator);
+    private MemberProfile findProfileById(Long creatorId) {
+        return memberProfileRepository.findByMember_MemberId(creatorId).orElse(null);
+    }
+
+    private Member buildCreator(CreatorDto.CreateRequest request) {
+        return Member.builder()
+                .memberAccount(request.getMemberAccount())
+                .memberPassword(passwordEncoder.encode(request.getMemberPassword()))
+                .memberName(request.getMemberName())
+                .memberRole(MemberRole.CREATOR)
+                .memberStatus(MemberStatus.WORKING)
+                .build();
+    }
+
+    private MemberCreatorDetail buildCreatorDetail(CreatorDto.CreateRequest request, Member creator, Member manager) {
+        return MemberCreatorDetail.builder()
+                .memberCreator(creator)
+                .memberManager(manager)
+                .creatorSubscribe(request.getCreatorSubscribe())
+                .creatorCategory(request.getCreatorCategory())
+                .creatorPlatform(CreatorPlatform.valueOf(request.getCreatorPlatform()))
+                .creatorStatus(CreatorStatus.valueOf(request.getCreatorStatus()))
+                .build();
+    }
+
+    private boolean hasCreatorInfoChanged(CreatorDto.UpdateRequest request) {
+        return request.getMemberName() != null ||
+                request.getMemberAccount() != null ||
+                request.getMemberPassword() != null;
+    }
+
+    private Member getUpdatedManager(MemberCreatorDetail detail, Long newManagerId) {
+        if (newManagerId != null && !newManagerId.equals(detail.getMemberManager().getMemberId())) {
+            return findAndValidateManager(newManagerId);
         }
+        return detail.getMemberManager();
+    }
 
-        // CreatorDetail 정보 업데이트
-        Member manager = detail.getMemberManager();
-        if (memberManagerId != null) {
-            manager = creatorRepository.findById(memberManagerId)
-                    .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 매니저입니다"));
+    private Member updateCreatorMember(Member creator, CreatorDto.UpdateRequest request) {
+        return creatorRepository.save(Member.builder()
+                .memberId(creator.getMemberId())
+                .memberAccount(request.getMemberAccount() != null ?
+                        request.getMemberAccount() : creator.getMemberAccount())
+                .memberPassword(request.getMemberPassword() != null ?
+                        passwordEncoder.encode(request.getMemberPassword()) : creator.getMemberPassword())
+                .memberName(request.getMemberName() != null ?
+                        request.getMemberName() : creator.getMemberName())
+                .memberRole(creator.getMemberRole())
+                .memberStatus(creator.getMemberStatus())
+                .department(creator.getDepartment())
+                .build());
+    }
 
-            if (manager.getMemberRole() != MemberRole.MANAGER) {
-                throw new IllegalArgumentException("매니저 권한이 없는 사용자입니다");
-            }
-        }
-
-        // Enum 변환
-        CreatorPlatform platform = creatorPlatform != null ?
-                CreatorPlatform.valueOf(creatorPlatform) : detail.getCreatorPlatform();
-        CreatorStatus status = creatorStatus != null ?
-                CreatorStatus.valueOf(creatorStatus) : detail.getCreatorStatus();
-
-        detail = MemberCreatorDetail.builder()
+    private MemberCreatorDetail updateCreatorDetail(Member creator, MemberCreatorDetail detail,
+                                                    Member manager, CreatorDto.UpdateRequest request) {
+        return creatorDetailRepository.save(MemberCreatorDetail.builder()
                 .creatorDetailId(detail.getCreatorDetailId())
                 .memberCreator(creator)
                 .memberManager(manager)
-                .creatorSubscribe(creatorSubscribe != null ? creatorSubscribe : detail.getCreatorSubscribe())
-                .creatorCategory(creatorCategory != null ? creatorCategory : detail.getCreatorCategory())
-                .creatorPlatform(platform)
-                .creatorStatus(status)
-                .build();
-        creatorDetailRepository.save(detail);
-
-        MemberProfile profile = memberProfileRepository
-                .findByMember_MemberId(creatorId)
-                .orElse(null);
-
-        if (profile != null) {
-            return CreatorDto.Response.fromWithProfile(
-                    creator, detail, profile.getProfileImage(), profile.getProfileBanner());
-        } else {
-            return CreatorDto.Response.from(creator, detail);
-        }
+                .creatorSubscribe(request.getCreatorSubscribe() != null ?
+                        request.getCreatorSubscribe() : detail.getCreatorSubscribe())
+                .creatorCategory(request.getCreatorCategory() != null ?
+                        request.getCreatorCategory() : detail.getCreatorCategory())
+                .creatorPlatform(request.getCreatorPlatform() != null ?
+                        CreatorPlatform.valueOf(request.getCreatorPlatform()) : detail.getCreatorPlatform())
+                .creatorStatus(request.getCreatorStatus() != null ?
+                        CreatorStatus.valueOf(request.getCreatorStatus()) : detail.getCreatorStatus())
+                .build());
     }
 
-    /**
-     * 크리에이터 삭제 (관리자) - 소프트 삭제
-     */
-    @Transactional
-    public void deleteCreator(Long creatorId) {
-        Member creator = creatorRepository.findByMemberIdAndMemberRoleAndMemberStatus(
-                        creatorId, MemberRole.CREATOR, MemberStatus.WORKING)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 크리에이터입니다: " + creatorId));
-
-        // 상태를 SUSPENDED로 변경 (소프트 삭제)
-        Member updatedCreator = Member.builder()
+    private Member buildDeletedCreator(Member creator) {
+        return Member.builder()
                 .memberId(creator.getMemberId())
                 .memberAccount(creator.getMemberAccount())
                 .memberPassword(creator.getMemberPassword())
@@ -219,36 +187,39 @@ public class CreatorService {
                 .memberStatus(MemberStatus.SUSPENDED)
                 .department(creator.getDepartment())
                 .build();
-
-        creatorRepository.save(updatedCreator);
     }
 
-    /**
-     * 내 담당 크리에이터 조회 (매니저)
-     */
-    public List<CreatorDto.Response> getMyCreators(Long managerId) {
-        List<Member> creators = creatorRepository.findCreatorsByManagerId(
-                managerId, MemberRole.CREATOR, MemberStatus.WORKING);
+    private List<CreatorDto.Response> buildCreatorResponses(List<Member> creators) {
+        if (creators.isEmpty()) return List.of();
+
+        List<Long> creatorIds = creators.stream()
+                .map(Member::getMemberId)
+                .collect(Collectors.toList());
+
+        Map<Long, MemberCreatorDetail> detailMap = creatorDetailRepository
+                .findByCreatorIdsWithManager(creatorIds).stream()
+                .collect(Collectors.toMap(d -> d.getMemberCreator().getMemberId(), d -> d));
+
+        Map<Long, MemberProfile> profileMap = memberProfileRepository
+                .findByMemberIds(creatorIds).stream()
+                .collect(Collectors.toMap(p -> p.getMember().getMemberId(), p -> p));
 
         return creators.stream()
                 .map(creator -> {
-                    MemberCreatorDetail detail = creatorDetailRepository
-                            .findByMemberCreator_MemberId(creator.getMemberId())
-                            .orElseThrow(() -> new IllegalArgumentException("크리에이터 상세 정보가 없습니다"));
-
-                    MemberProfile profile = memberProfileRepository
-                            .findByMember_MemberId(creator.getMemberId())
-                            .orElse(null);
-
-                    if (profile != null) {
-                        return CreatorDto.Response.fromWithProfile(
-                                creator, detail, profile.getProfileImage(), profile.getProfileBanner());
-                    } else {
-                        return CreatorDto.Response.from(creator, detail);
+                    MemberCreatorDetail detail = detailMap.get(creator.getMemberId());
+                    if (detail == null) {
+                        throw new IllegalArgumentException("크리에이터 상세 정보가 없습니다: " + creator.getMemberId());
                     }
+                    return buildCreatorResponse(creator, detail, profileMap.get(creator.getMemberId()));
                 })
                 .collect(Collectors.toList());
     }
 
-
+    private CreatorDto.Response buildCreatorResponse(Member creator, MemberCreatorDetail detail,
+                                                     MemberProfile profile) {
+        return profile != null ?
+                CreatorDto.Response.fromWithProfile(creator, detail,
+                        profile.getProfileImage(), profile.getProfileBanner()) :
+                CreatorDto.Response.from(creator, detail);
+    }
 }
