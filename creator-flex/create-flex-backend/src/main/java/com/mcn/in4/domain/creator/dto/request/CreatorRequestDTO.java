@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 
 public class CreatorRequestDTO {
 
-    //크리에이터 생성 요청 DTO
+    // 크리에이터 생성 요청 DTO
     @Getter
     @NoArgsConstructor
     @AllArgsConstructor
@@ -42,7 +42,7 @@ public class CreatorRequestDTO {
         private String creatorMainContact;
     }
 
-     // 크리에이터 수정 요청 DTO
+    // 크리에이터 수정 요청 DTO
     @Getter
     @NoArgsConstructor
     @AllArgsConstructor

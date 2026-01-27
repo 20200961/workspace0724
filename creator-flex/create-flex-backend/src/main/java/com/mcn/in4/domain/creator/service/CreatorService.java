@@ -1,5 +1,7 @@
 package com.mcn.in4.domain.creator.service;
 
+import com.mcn.in4.domain.creator.dto.request.CreatorRequestDTO;
+import com.mcn.in4.domain.creator.dto.response.CreatorResponseDTO;
 import com.mcn.in4.domain.creator.repository.CreatorDetailRepository;
 import com.mcn.in4.domain.creator.repository.CreatorRepository;
 import com.mcn.in4.domain.creator.repository.MemberProfileRepository;
@@ -30,7 +32,7 @@ public class CreatorService {
     private final PasswordEncoder passwordEncoder;
 
     @Transactional
-    public Long createCreator(CreatorDto.CreateRequest request) {
+    public Long createCreator(CreatorRequestDTO.Create request) {
         validateDuplicateAccount(request.getMemberAccount());
 
         Member manager = findAndValidateManager(request.getMemberManagerId());
@@ -43,13 +45,13 @@ public class CreatorService {
         return creator.getMemberId();
     }
 
-    public List<CreatorDto.Response> getAllCreators() {
+    public List<CreatorResponseDTO.Info> getAllCreators() {
         List<Member> creators = creatorRepository.findAllCreatorsWithDepartment(
                 MemberRole.CREATOR, MemberStatus.WORKING);
         return buildCreatorResponses(creators);
     }
 
-    public CreatorDto.Response getCreatorById(Long creatorId) {
+    public CreatorResponseDTO.Info getCreatorById(Long creatorId) {
         Member creator = findCreatorById(creatorId);
         MemberCreatorDetail detail = findCreatorDetailById(creatorId);
         MemberProfile profile = findProfileById(creatorId);
@@ -57,7 +59,7 @@ public class CreatorService {
     }
 
     @Transactional
-    public CreatorDto.Response updateCreator(Long creatorId, CreatorDto.UpdateRequest request) {
+    public CreatorResponseDTO.Info updateCreator(Long creatorId, CreatorRequestDTO.Update request) {
         Member creator = findCreatorById(creatorId);
         MemberCreatorDetail detail = findCreatorDetailById(creatorId);
 
@@ -77,7 +79,7 @@ public class CreatorService {
         creatorRepository.save(buildDeletedCreator(creator));
     }
 
-    public List<CreatorDto.Response> getMyCreators(Long managerId) {
+    public List<CreatorResponseDTO.Info> getMyCreators(Long managerId) {
         List<Member> creators = creatorRepository.findCreatorsByManagerIdWithDepartment(
                 managerId, MemberRole.CREATOR, MemberStatus.WORKING);
         return buildCreatorResponses(creators);
@@ -98,7 +100,7 @@ public class CreatorService {
 
     private Member findCreatorById(Long creatorId) {
         return creatorRepository.findCreatorByIdWithDepartment(
-                        creatorId, MemberRole.CREATOR, MemberStatus.WORKING)
+                creatorId, MemberRole.CREATOR, MemberStatus.WORKING)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 크리에이터입니다: " + creatorId));
     }
 
@@ -111,7 +113,7 @@ public class CreatorService {
         return memberProfileRepository.findByMember_MemberId(creatorId).orElse(null);
     }
 
-    private Member buildCreator(CreatorDto.CreateRequest request) {
+    private Member buildCreator(CreatorRequestDTO.Create request) {
         return Member.builder()
                 .memberAccount(request.getMemberAccount())
                 .memberPassword(passwordEncoder.encode(request.getMemberPassword()))
@@ -121,7 +123,7 @@ public class CreatorService {
                 .build();
     }
 
-    private MemberCreatorDetail buildCreatorDetail(CreatorDto.CreateRequest request, Member creator, Member manager) {
+    private MemberCreatorDetail buildCreatorDetail(CreatorRequestDTO.Create request, Member creator, Member manager) {
         return MemberCreatorDetail.builder()
                 .memberCreator(creator)
                 .memberManager(manager)
@@ -132,7 +134,7 @@ public class CreatorService {
                 .build();
     }
 
-    private boolean hasCreatorInfoChanged(CreatorDto.UpdateRequest request) {
+    private boolean hasCreatorInfoChanged(CreatorRequestDTO.Update request) {
         return request.getMemberName() != null ||
                 request.getMemberAccount() != null ||
                 request.getMemberPassword() != null;
@@ -145,15 +147,15 @@ public class CreatorService {
         return detail.getMemberManager();
     }
 
-    private Member updateCreatorMember(Member creator, CreatorDto.UpdateRequest request) {
+    private Member updateCreatorMember(Member creator, CreatorRequestDTO.Update request) {
         return creatorRepository.save(Member.builder()
                 .memberId(creator.getMemberId())
-                .memberAccount(request.getMemberAccount() != null ?
-                        request.getMemberAccount() : creator.getMemberAccount())
-                .memberPassword(request.getMemberPassword() != null ?
-                        passwordEncoder.encode(request.getMemberPassword()) : creator.getMemberPassword())
-                .memberName(request.getMemberName() != null ?
-                        request.getMemberName() : creator.getMemberName())
+                .memberAccount(
+                        request.getMemberAccount() != null ? request.getMemberAccount() : creator.getMemberAccount())
+                .memberPassword(
+                        request.getMemberPassword() != null ? passwordEncoder.encode(request.getMemberPassword())
+                                : creator.getMemberPassword())
+                .memberName(request.getMemberName() != null ? request.getMemberName() : creator.getMemberName())
                 .memberRole(creator.getMemberRole())
                 .memberStatus(creator.getMemberStatus())
                 .department(creator.getDepartment())
@@ -161,19 +163,20 @@ public class CreatorService {
     }
 
     private MemberCreatorDetail updateCreatorDetail(Member creator, MemberCreatorDetail detail,
-                                                    Member manager, CreatorDto.UpdateRequest request) {
+            Member manager, CreatorRequestDTO.Update request) {
         return creatorDetailRepository.save(MemberCreatorDetail.builder()
                 .creatorDetailId(detail.getCreatorDetailId())
                 .memberCreator(creator)
                 .memberManager(manager)
-                .creatorSubscribe(request.getCreatorSubscribe() != null ?
-                        request.getCreatorSubscribe() : detail.getCreatorSubscribe())
-                .creatorCategory(request.getCreatorCategory() != null ?
-                        request.getCreatorCategory() : detail.getCreatorCategory())
-                .creatorPlatform(request.getCreatorPlatform() != null ?
-                        CreatorPlatform.valueOf(request.getCreatorPlatform()) : detail.getCreatorPlatform())
-                .creatorStatus(request.getCreatorStatus() != null ?
-                        CreatorStatus.valueOf(request.getCreatorStatus()) : detail.getCreatorStatus())
+                .creatorSubscribe(request.getCreatorSubscribe() != null ? request.getCreatorSubscribe()
+                        : detail.getCreatorSubscribe())
+                .creatorCategory(request.getCreatorCategory() != null ? request.getCreatorCategory()
+                        : detail.getCreatorCategory())
+                .creatorPlatform(
+                        request.getCreatorPlatform() != null ? CreatorPlatform.valueOf(request.getCreatorPlatform())
+                                : detail.getCreatorPlatform())
+                .creatorStatus(request.getCreatorStatus() != null ? CreatorStatus.valueOf(request.getCreatorStatus())
+                        : detail.getCreatorStatus())
                 .build());
     }
 
@@ -189,8 +192,9 @@ public class CreatorService {
                 .build();
     }
 
-    private List<CreatorDto.Response> buildCreatorResponses(List<Member> creators) {
-        if (creators.isEmpty()) return List.of();
+    private List<CreatorResponseDTO.Info> buildCreatorResponses(List<Member> creators) {
+        if (creators.isEmpty())
+            return List.of();
 
         List<Long> creatorIds = creators.stream()
                 .map(Member::getMemberId)
@@ -215,11 +219,9 @@ public class CreatorService {
                 .collect(Collectors.toList());
     }
 
-    private CreatorDto.Response buildCreatorResponse(Member creator, MemberCreatorDetail detail,
-                                                     MemberProfile profile) {
-        return profile != null ?
-                CreatorDto.Response.fromWithProfile(creator, detail,
-                        profile.getProfileImage(), profile.getProfileBanner()) :
-                CreatorDto.Response.from(creator, detail);
+    private CreatorResponseDTO.Info buildCreatorResponse(Member creator, MemberCreatorDetail detail,
+            MemberProfile profile) {
+        return profile != null ? CreatorResponseDTO.Info.fromWithProfile(creator, detail,
+                profile.getProfileImage(), profile.getProfileBanner()) : CreatorResponseDTO.Info.from(creator, detail);
     }
 }

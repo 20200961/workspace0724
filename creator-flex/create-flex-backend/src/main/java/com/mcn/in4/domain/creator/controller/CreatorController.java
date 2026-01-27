@@ -18,25 +18,25 @@ public class CreatorController {
     private final CreatorService creatorService;
 
     @PostMapping
-    public ResponseEntity<CreatorDto.CreateResponse> createCreator(@RequestBody CreatorDto.CreateRequest request) {
+    public ResponseEntity<CreatorResponseDTO.Create> createCreator(@RequestBody CreatorRequestDTO.Create request) {
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(new CreatorDto.CreateResponse(creatorService.createCreator(request)));
+                .body(new CreatorResponseDTO.Create(creatorService.createCreator(request)));
     }
 
     @GetMapping
-    public ResponseEntity<List<CreatorDto.Response>> getAllCreators() {
+    public ResponseEntity<List<CreatorResponseDTO.Info>> getAllCreators() {
         return ResponseEntity.ok(creatorService.getAllCreators());
     }
 
     @GetMapping("/{creatorId}")
-    public ResponseEntity<CreatorDto.Response> getCreatorById(@PathVariable Long creatorId) {
+    public ResponseEntity<CreatorResponseDTO.Info> getCreatorById(@PathVariable Long creatorId) {
         return ResponseEntity.ok(creatorService.getCreatorById(creatorId));
     }
 
     @PatchMapping("/{creatorId}")
-    public ResponseEntity<CreatorDto.Response> updateCreator(
+    public ResponseEntity<CreatorResponseDTO.Info> updateCreator(
             @PathVariable Long creatorId,
-            @RequestBody CreatorDto.UpdateRequest request) {
+            @RequestBody CreatorRequestDTO.Update request) {
         return ResponseEntity.ok(creatorService.updateCreator(creatorId, request));
     }
 
@@ -47,7 +47,7 @@ public class CreatorController {
     }
 
     @GetMapping("/manager/{managerId}")
-    public ResponseEntity<List<CreatorDto.Response>> getMyCreators(@PathVariable Long managerId) {
+    public ResponseEntity<List<CreatorResponseDTO.Info>> getMyCreators(@PathVariable Long managerId) {
         return ResponseEntity.ok(creatorService.getMyCreators(managerId));
     }
 }
