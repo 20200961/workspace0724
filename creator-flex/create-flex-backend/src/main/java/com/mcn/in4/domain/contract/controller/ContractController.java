@@ -1,0 +1,67 @@
+package com.mcn.in4.domain.contract.controller;
+
+import com.mcn.in4.domain.contract.dto.request.ContractRequestDTO;
+import com.mcn.in4.domain.contract.dto.response.ContractResponseDTO;
+import com.mcn.in4.domain.contract.service.ContractService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+@RestController
+@RequestMapping("/api/contracts")
+@RequiredArgsConstructor
+public class ContractController {
+
+    private final ContractService contractService;
+
+    // 계약 등록
+    @PostMapping
+    public ResponseEntity<Map<String, Object>> createContract(
+            @RequestBody ContractRequestDTO.Create request) {
+
+        Long contractId = contractService.createContract(request);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("message", "계약이 성공적으로 등록되었습니다.");
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    // 계약 목록 조회
+    @GetMapping
+    public ResponseEntity<List<ContractResponseDTO.Info>> getAllContracts() {
+        return ResponseEntity.ok(contractService.getAllContracts());
+    }
+
+    // 계약 단건 조회
+    @GetMapping("/{contractId}")
+    public ResponseEntity<ContractResponseDTO.Info> getContractById(
+            @PathVariable Long contractId) {
+        return ResponseEntity.ok(contractService.getContractById(contractId));
+    }
+
+    // 계약서 파일 다운로드
+    @GetMapping("/{contractId}/file")
+    public ResponseEntity<Map<String, String>> getContractFile(
+            @PathVariable Long contractId) {
+
+        String fileUrl = contractService.getContractFileUrl(contractId);
+
+        Map<String, String> response = new HashMap<>();
+        response.put("file_url", fileUrl);
+
+        return ResponseEntity.ok(response);
+    }
+
+    // 크리에이터별 계약 조회
+    @GetMapping("/creator/{creatorId}")
+    public ResponseEntity<List<ContractResponseDTO.Info>> getContractsByCreatorId(
+            @PathVariable Long creatorId) {
+        return ResponseEntity.ok(contractService.getContractsByCreatorId(creatorId));
+    }
+}
