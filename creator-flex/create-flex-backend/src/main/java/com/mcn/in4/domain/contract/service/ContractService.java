@@ -14,12 +14,6 @@ public interface ContractService {
     // 전체 계약 목록 조회
     List<ContractResponseDTO.Info> getAllContracts();
 
-    // 계약 단건 조회
-    ContractResponseDTO.Info getContractById(Long contractId);
-
     // 계약서 파일 다운로드 (파일 URL 반환)
     String getContractFileUrl(Long contractId);
-
-    // 크리에이터 계약 조회
-    List<ContractResponseDTO.Info> getContractsByCreatorId(Long creatorId);
 }

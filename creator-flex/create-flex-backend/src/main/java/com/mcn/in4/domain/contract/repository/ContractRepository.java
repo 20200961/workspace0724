@@ -17,17 +17,4 @@ public interface ContractRepository extends JpaRepository<CreatorContract, Long>
             "JOIN FETCH c.memberCreator " +
             "ORDER BY c.contractStart DESC")
     List<CreatorContract> findAllContractsWithCreator();
-
-    // 계약 단건 조회
-    @Query("SELECT c FROM CreatorContract c " +
-            "JOIN FETCH c.memberCreator " +
-            "WHERE c.creatorContractId = :contractId")
-    Optional<CreatorContract> findContractByIdWithCreator(@Param("contractId") Long contractId);
-
-    // 크리에이터별 계약 조회
-    @Query("SELECT c FROM CreatorContract c " +
-            "JOIN FETCH c.memberCreator " +
-            "WHERE c.memberCreator.memberId = :creatorId " +
-            "ORDER BY c.contractStart DESC")
-    List<CreatorContract> findContractsByCreatorId(@Param("creatorId") Long creatorId);
 }

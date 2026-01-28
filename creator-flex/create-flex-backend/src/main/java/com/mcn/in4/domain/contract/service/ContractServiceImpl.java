@@ -64,15 +64,6 @@ public class ContractServiceImpl implements ContractService {
     }
 
     @Override
-    public ContractResponseDTO.Info getContractById(Long contractId) {
-        CreatorContract contract = contractRepository.findContractByIdWithCreator(contractId)
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "존재하지 않는 계약입니다: " + contractId));
-
-        return ContractResponseDTO.Info.from(contract);
-    }
-
-    @Override
     public String getContractFileUrl(Long contractId) {
         CreatorContract contract = contractRepository.findById(contractId)
                 .orElseThrow(() -> new IllegalArgumentException(
@@ -83,19 +74,5 @@ public class ContractServiceImpl implements ContractService {
         }
 
         return contract.getContractFileUrl();
-    }
-
-    @Override
-    public List<ContractResponseDTO.Info> getContractsByCreatorId(Long creatorId) {
-        // 크리에이터 존재 여부 확인
-        memberRepository.findById(creatorId)
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "존재하지 않는 크리에이터입니다: " + creatorId));
-
-        List<CreatorContract> contracts = contractRepository.findContractsByCreatorId(creatorId);
-
-        return contracts.stream()
-                .map(ContractResponseDTO.Info::from)
-                .collect(Collectors.toList());
     }
 }

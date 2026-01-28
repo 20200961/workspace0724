@@ -38,13 +38,6 @@ public class ContractController {
         return ResponseEntity.ok(contractService.getAllContracts());
     }
 
-    // 계약 단건 조회
-    @GetMapping("/{contractId}")
-    public ResponseEntity<ContractResponseDTO.Info> getContractById(
-            @PathVariable Long contractId) {
-        return ResponseEntity.ok(contractService.getContractById(contractId));
-    }
-
     // 계약서 파일 다운로드
     @GetMapping("/{contractId}/file")
     public ResponseEntity<Map<String, String>> getContractFile(
@@ -56,12 +49,5 @@ public class ContractController {
         response.put("file_url", fileUrl);
 
         return ResponseEntity.ok(response);
-    }
-
-    // 크리에이터별 계약 조회
-    @GetMapping("/creator/{creatorId}")
-    public ResponseEntity<List<ContractResponseDTO.Info>> getContractsByCreatorId(
-            @PathVariable Long creatorId) {
-        return ResponseEntity.ok(contractService.getContractsByCreatorId(creatorId));
     }
 }
