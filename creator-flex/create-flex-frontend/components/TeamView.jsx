@@ -3,12 +3,25 @@ import { ProfileView } from './ProfileView';
 import * as S from './TeamView.styled';
 import { Search, Users, Mail, Phone, MoreHorizontal, Hash, ChevronLeft, ArrowRight, Monitor } from 'lucide-react';
 
-export const TeamView = ({ user, teams, employees, vacationLogs = [], creators = [] }) => {
+import { useAuthStore } from '../stores/useAuthStore';
+import { useOrgStore } from '../stores/useOrgStore';
+import { useScheduleStore } from '../stores/useScheduleStore';
+import { useCreatorStore } from '../stores/useCreatorStore';
+
+export const TeamView = () => {
+    const { user } = useAuthStore();
+    const { teams, employees } = useOrgStore();
+    const { vacationLogs } = useScheduleStore();
+    const { creators } = useCreatorStore();
+
     const [selectedMember, setSelectedMember] = useState(null);
     const [selectedTeam, setSelectedTeam] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
 
     // Find the team(s) the current user belongs to
+    // Safety check for user
+    if (!user) return null;
+
     const myTeams = teams.filter(team => team.memberIds.includes(user.id));
 
     // Helper to convert Employee to UserProfile for display
@@ -51,17 +64,16 @@ export const TeamView = ({ user, teams, employees, vacationLogs = [], creators =
 
     // Level 3: Profile Detail
     if (selectedMember) {
+        // Render ProfileView for selected member.
+        // Requires ProfileView to support 'profile' prop which overrides store's userProfile.
         const isCreator = selectedMember.job === 'Creator' || selectedMember.rank === 'Creator';
         return (
             <ProfileView
-                profile={selectedMember}
-                onUpdateProfile={() => { }}
+                profile={selectedMember} // Pass external profile
                 readOnly={true}
                 onBack={() => setSelectedMember(null)}
-                vacationLogs={vacationLogs}
-                isCreator={isCreator}
                 hideVacationWidget={true}
-                hideTasks={true} // Only hide tasks when viewing through Team Status
+                hideTasks={true}
             />
         );
     }
@@ -86,7 +98,7 @@ export const TeamView = ({ user, teams, employees, vacationLogs = [], creators =
                     role: creator.category || 'Creator', // Display Category as Role
                     rank: creator.platform, // Display Platform as Rank
                     dept: 'MCN',
-                    workStatus: creator.status === '활동중' ? '출근' : '퇴근', // Map Status
+                    workStatus: creator.status || '대기중', // Map Status directly ('활동중', '대기중', '휴식중')
                     email: creator.contactInfo || '-',
                     phone: creator.contactInfo || '-',
                     avatarUrl: creator.avatarUrl,
@@ -184,9 +196,11 @@ export const TeamView = ({ user, teams, employees, vacationLogs = [], creators =
                                                 {member.nickname || member.name}
                                             </S.Badge>
                                             <S.StatusBadge $type={
-                                                member.workStatus === '출근' || (member.type === 'creator' && member.workStatus === '활동중')
+                                                member.workStatus === '출근' || member.workStatus === '활동중'
                                                     ? 'active'
-                                                    : 'inactive'
+                                                    : member.workStatus === '대기중' || member.workStatus === '휴식중'
+                                                        ? 'waiting' // You might need to add 'waiting' style in styled-components or reuse 'inactive' if acceptable
+                                                        : 'inactive'
                                             }>
                                                 {member.workStatus}
                                             </S.StatusBadge>

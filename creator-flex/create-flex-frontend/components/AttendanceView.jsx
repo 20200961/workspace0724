@@ -8,18 +8,22 @@ import {
     ProgressBarBg, ProgressBarFill, TabsContainer, TabButton, VerticalStack
 } from './AttendanceView.styled';
 
-export const AttendanceView = ({
-    vacationLogs = [],
-    onUpdateVacationLogs,
-    userName,
-    attendanceLogs = []
-}) => {
+import { useOrgStore } from '../stores/useOrgStore';
+import { useScheduleStore } from '../stores/useScheduleStore';
+
+export const AttendanceView = () => {
+    const { userProfile, attendanceLogs } = useOrgStore();
+    const { vacationLogs, setVacationLogs } = useScheduleStore();
+
+    // Derived state
+    const userName = userProfile.name;
+
     const [activeTab, setActiveTab] = useState('work');
 
     // Stats Data (Mock)
     const stats = {
         lateCount: 1,
-        overtimeCount: 3,
+        overtimeMinutes: 165,
         leaveTotal: 15,
         leaveUsed: 2.5
     };
@@ -28,9 +32,15 @@ export const AttendanceView = ({
         <Container>
             <ContentWrapper>
                 <Header>
-                    <Title>
-                        <Clock color="#1f2937" size={28} /> 나의 근태/휴가
-                    </Title>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <Clock color="#1f2937" size={32} />
+                        <div>
+                            <Title>나의 근태/휴가</Title>
+                            <p style={{ fontSize: '0.875rem', color: '#6b7280', marginTop: '0.25rem' }}>
+                                나의 근태 현황과 휴가 사용 내역을 조회하고 관리합니다.
+                            </p>
+                        </div>
+                    </div>
                 </Header>
 
                 {/* Dashboard Cards */}
@@ -49,14 +59,14 @@ export const AttendanceView = ({
 
                     <DashboardCard>
                         <CardHeader>
-                            <CardTitle>추가근무 횟수</CardTitle>
+                            <CardTitle>초과 근무 시간</CardTitle>
                             <Timer size={18} color="#d1d5db" />
                         </CardHeader>
                         <CardValueWrapper>
-                            <CardValue>{stats.overtimeCount}</CardValue>
-                            <CardUnit>회</CardUnit>
+                            <CardValue>{stats.overtimeMinutes}</CardValue>
+                            <CardUnit>분</CardUnit>
                         </CardValueWrapper>
-                        <CardDescription>정규 업무 시간을 초과하여 근무한 일수입니다.</CardDescription>
+                        <CardDescription>정규 업무 시간을 초과하여 근무한 총 시간입니다.</CardDescription>
                     </DashboardCard>
 
                     <DashboardCard>
@@ -100,7 +110,7 @@ export const AttendanceView = ({
                 {activeTab === 'vacation' && (
                     <MyVacation
                         vacationLogs={vacationLogs}
-                        onUpdateVacationLogs={onUpdateVacationLogs}
+                        onUpdateVacationLogs={setVacationLogs}
                         userName={userName}
                     />
                 )}

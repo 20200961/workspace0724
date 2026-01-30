@@ -8,7 +8,7 @@ import {
     SurveyModalContent, StickyHeader, ScrollBody, WelcomeBox, QuestionGroup, QuestionItem, QuestionText, OptionsGrid, OptionButton, SubmitWrapper, ResultBox, ScoreDisplay, ScoreTotal, ScoreMax, ResultDescriptionBox, DescriptionHeader,
     DetailHeader, DetailBody, DetailGrid, DetailItem, DetailLabel, DetailValue, ResultBadge, FileAttachmentBox, FileInfo, FileIconWrapper, FileMeta, FileName, FileSize, DownloadButton, FootNote, CloseButtonFooter, CloseButton,
     BlueGuideBox, BlueGuideContent, BlueGuideTitle, BlueGuideText, InputGroup, InputLabel, StyledSelect, StyledInput,
-    UploadArea, UploadIconWrapper, UploadText, UploadSubText
+    UploadArea, UploadIconWrapper, UploadText, UploadSubText, SurveyActionButton
 } from './Health.styled';
 import {
     ModalOverlay, ModalContent, ModalHeader, ModalTitle, CloseButton as ModalCloseBtn, ModalBody,
@@ -96,7 +96,7 @@ export const PhqSurveyModal = ({ onClose, onSubmit }) => {
                         <WelcomeBox>
                             <h2 className="text-xl font-bold mb-2">설문을 시작할까요?</h2>
                             <p className="text-sm text-gray-500 mb-6">지난 2주간의 상태를 체크해주세요.</p>
-                            <button onClick={() => setStep(1)} className="bg-black text-white px-6 py-2 rounded-lg text-sm">시작하기</button>
+                            <SurveyActionButton onClick={() => setStep(1)}>시작하기</SurveyActionButton>
                         </WelcomeBox>
                     )}
                     {step === 1 && (
@@ -124,7 +124,7 @@ export const PhqSurveyModal = ({ onClose, onSubmit }) => {
                                 ))}
                             </QuestionGroup>
                             <SubmitWrapper>
-                                <button onClick={handleSubmit} className="bg-black text-white px-8 py-2 rounded-lg text-sm">제출하기</button>
+                                <SurveyActionButton onClick={handleSubmit}>제출하기</SurveyActionButton>
                             </SubmitWrapper>
                         </div>
                     )}
@@ -138,9 +138,9 @@ export const PhqSurveyModal = ({ onClose, onSubmit }) => {
                                 <ScoreTotal>
                                     {totalScore} <ScoreMax>/ 27</ScoreMax>
                                 </ScoreTotal>
-                                <span className={`inline-block px-4 py-1.5 rounded-full border bg-white text-sm font-bold border-gray-200 text-gray-700`}>
+                                <ResultBadge $result={resultData.badgeText}>
                                     {resultData.badgeText}
-                                </span>
+                                </ResultBadge>
                             </ScoreDisplay>
 
                             <ResultDescriptionBox>
@@ -152,9 +152,9 @@ export const PhqSurveyModal = ({ onClose, onSubmit }) => {
                                 </p>
                             </ResultDescriptionBox>
 
-                            <button onClick={handleFinalize} className="w-full bg-black text-white py-3 rounded-lg font-bold hover:bg-gray-800 transition-colors">
+                            <SurveyActionButton onClick={handleFinalize} $fullWidth>
                                 확인 완료
-                            </button>
+                            </SurveyActionButton>
                         </ResultBox>
                     )}
                 </ScrollBody>
@@ -193,6 +193,7 @@ export const CreatorHealthView = ({
 
     const [newCheckup, setNewCheckup] = useState({
         creatorName: '',
+        checkupName: '',
         date: new Date().toISOString().split('T')[0],
         result: '정상 (양호)'
     });
@@ -200,6 +201,7 @@ export const CreatorHealthView = ({
     const handleAddCheckup = () => {
         const effectiveName = isCreator ? creators[0].name : newCheckup.creatorName;
         if (!effectiveName) return alert('크리에이터를 선택해주세요.');
+        if (!newCheckup.checkupName.trim()) return alert('검진 명을 입력해주세요.');
         if (!uploadedFile) return alert('검진 결과 PDF 파일을 업로드해주세요.');
 
         let score = 90;
@@ -209,6 +211,7 @@ export const CreatorHealthView = ({
         const newRecord = {
             id: Date.now().toString(),
             name: effectiveName,
+            checkupName: newCheckup.checkupName,
             lastCheck: newCheckup.date,
             score: score,
             result: newCheckup.result,
@@ -313,7 +316,7 @@ export const CreatorHealthView = ({
                     <LogList>
                         {filteredLogs.map(log => (
                             <LogItem key={log.id}>
-                                <LogStatusBadge $status={log.status}>{log.status}</LogStatusBadge>
+
                                 <LogHeader>
                                     <LogCreator>{log.creator}</LogCreator>
                                     <LogDate>{log.date}</LogDate>
@@ -429,6 +432,16 @@ export const CreatorHealthView = ({
                                         </Select>
                                     </div>
                                 )}
+
+                                <div>
+                                    <Label>검진 명</Label>
+                                    <StyledInput
+                                        type="text"
+                                        placeholder="예: 2026년 정기 건강검진"
+                                        value={newCheckup.checkupName}
+                                        onChange={e => setNewCheckup({ ...newCheckup, checkupName: e.target.value })}
+                                    />
+                                </div>
 
                                 <div>
                                     <Label>최근 검진일</Label>
