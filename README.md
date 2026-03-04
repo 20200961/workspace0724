@@ -1,87 +1,28 @@
-# Decision Log
+# KH 정보교육원 풀스택 개발자 과정 학습 저장소
 
-의사결정 과정을 체계적으로 기록하고 회고하는 웹 애플리케이션
+KH 정보교육원에서 풀스택 개발자 과정을 이수하며 학습한 프로젝트와 실습 코드들을 정리한 저장소입니다. 기초적인 SQL부터 자바 객체지향 프로그래밍, 프론트엔드 기초, 그리고 최신 프레임워크인 Spring과 React를 활용한 풀스택 애플리케이션 개발까지의 과정을 담고 있습니다.
 
-## 프로젝트 소개
+## 📚 학습 커리큘럼
 
-개인과 팀의 중요한 의사결정을 문서화하고, 결정의 배경과 결과를 추적하여 더 나은 의사결정을 돕는 서비스입니다.
+### 🗄️ Database & Backend Foundation
+- **01_SQL**: 관계형 데이터베이스(Oracle/MySQL)의 기초 및 복잡한 쿼리 작성 능력 함양
+- **02_JAVA**: 자바 프로그래밍 언어의 문법, 객체지향 프로그래밍(OOP) 핵심 개념 학습
+- **03_JDBC**: 자바 애플리케이션과 데이터베이스의 연동 및 데이터 처리 로직 구현
 
-### 주요 기능
+### 🌐 Web & Frontend development
+- **04_Front**: HTML5, CSS3, JavaScript를 이용한 정적 및 동적 웹 디자인의 기초
+- **06_React**: Modern Web의 트렌드인 React 라이브러리를 활용한 컴포넌트 기반 UI 개발
 
-- 📝 의사결정 기록 (상황, 선택지, 기준)
-- 🔍 선택지 비교 및 분석
-- 🎯 결과 회고 작성
-- 📊 통계 대시보드
-- 👥 팀/개인 결정 구분
+### 🏗️ Advanced Web Backend
+- **04_Servlet & 05_JSP**: 서블릿과 JSP를 이용한 동적 웹 애플리케이션 구조 및 MVC 패턴의 이해
+- **05_spring**: Spring Framework 기반의 엔터프라이즈급 백엔드 아키텍처 및 설정 학습
+- **07_RestServer**: Spring Boot와 RESTful API 설계를 통한 효율적인 데이터 통신 서버 구축
+- **jpa2**: JPA(Java Persistence API)를 활용한 객체 중심의 데이터베이스 매핑 및 활용
 
-## 기술 스택
+## 🚀 주요 실습 프로젝트
+- **TODOAPP**: 기본적인 CRUD 기능을 구현한 할 일 관리 애플리케이션
+- **DecisionLog**: 의사결정 과정을 기록하고 관리하는 웹 서비스 (React + Spring Boot)
+- **myPage**: 개인 프로필 및 대시보드 기능을 포함한 웹 프로젝트
 
-**Frontend**
-- React 18 + React Router v6
-- Styled Components
-- Context API
-
-**Backend (필수)**
-- REST API 서버 (Spring Boot, Express 등)
-- Database (MySQL, PostgreSQL 등)
-
-> ⚠️ **백엔드 API 서버가 반드시 필요합니다**
-
-## 빠른 시작
-
-### 1. 백엔드 서버 실행
-```bash
-# 백엔드 서버를 먼저 실행하세요 (예: http://localhost:8080)
-```
-
-### 2. 프론트엔드 실행
-```bash
-npm install
-npm run dev
-```
-
-### 3. 프록시 설정 (vite.config.js)
-```javascript
-export default defineConfig({
-  server: {
-    proxy: {
-      '/api': 'http://localhost:8080'
-    }
-  }
-})
-```
-
-## API 엔드포인트
-
-### 회원
-- `POST /api/members` - 회원가입
-- `POST /api/members/login` - 로그인
-- `GET /api/members/:id/stats` - 통계 조회
-
-### 의사결정
-- `GET /api/decisions` - 목록 조회
-- `GET /api/decisions/:id` - 상세 조회
-- `POST /api/decisions` - 생성
-- `DELETE /api/decisions/:id` - 삭제
-- `POST /api/decisions/:id/retrospective` - 회고 작성
-
-## 프로젝트 구조
-
-```
-src/
-├── api/                 # API 통신
-├── components/          # 재사용 컴포넌트
-├── context/            # Context API (Auth, Decision)
-├── pages/              # 페이지 컴포넌트
-└── routes/             # 라우팅 설정
-```
-
-## 데이터베이스 스키마
-
-```sql
-members (id, email, name, created_at)
-decisions (id, member_id, title, type, situation, final_choice, decision_date)
-options (id, decision_id, name, pros, cons, risks)
-criteria (id, decision_id, speed, cost, scalability, team_capability)
-retrospectives (id, decision_id, actual_result, was_correct, improvements)
-```
+---
+*모든 학습 기록은 KH 정보교육원의 교육 커리큘럼을 충실히 따르고 있습니다.*
